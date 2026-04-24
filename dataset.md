@@ -8,8 +8,8 @@ Each image captures a tabletop setup where multiple players are holding cards. T
 
 The dataset is split into:
 
-Training set: images + ground truth annotations
-Test set: images only (labels hidden)
+* Training set: images + ground truth annotations
+* Test set: images only (labels hidden)
 
 ## Data Format
 
@@ -17,17 +17,19 @@ Test set: images only (labels hidden)
 
 Each image contains:
 
-a center card on the table
-up to four players, each holding a set of cards
+* a center card on the table
+* up to four players, each holding a set of cards
+
 Scenes may vary in:
 
-number of players
-background
-card orientations
+* number of players
+* background
+* card orientations
 
 ### Annotations (Training Set)
 
-Each image corresponds to one row in a CSV file with the following structure: image_id,center_card,active_player,player_1_cards,player_2_cards,player_3_cards,player_4_cards
+Each image corresponds to one row in a CSV file with the following structure: 
+`image_id,center_card,active_player,player_1_cards,player_2_cards,player_3_cards,player_4_cards`
 
 ### Field Description
 
@@ -38,12 +40,11 @@ Each image corresponds to one row in a CSV file with the following structure: im
 
 ### Card Representation
 
-Cards are represented as strings combining the first letter of the color and value/action. e.g. r_5;b_skip;y_reverse;wild
+Cards are represented as strings combining the first letter of the color and value/action. e.g. `r_5;b_skip;y_reverse;wild`
 
 ### Multiple Cards
 
-Cards are separated by semicolons ;
-Order does not matter
+Cards are separated by semicolons `;` order does not matter
 
 ### Duplicate Cards
 
@@ -62,11 +63,10 @@ Players are ordered counter-clockwise.
 
 ### Missing Players
 
-Not all images contain four players.
-
-Some player positions may be empty
-Missing players can occur at any index
-Their corresponding fields must be treated as having no cards
+* Not all images contain four players.
+* Some player positions may be empty.
+* Missing players can occur at any index.
+* Their corresponding fields must be treated as having no cards
 
 ### Important Note on Empty Values
 

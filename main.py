@@ -1,6 +1,8 @@
-import kagglehub
+import pandas as pd
 
-# Download latest version
-path = kagglehub.competition_download("iapr-26-uno-vision-challenge")
+submission_df = pd.read_csv("data/sample_submission.csv")
+print(submission_df.head())
 
-print("Path to competition files:", path)
+# remove ID 'L1000867' because it is not in the test set
+submission_df = submission_df[submission_df["image_id"] != "L1000867"]
+print(len(submission_df))
