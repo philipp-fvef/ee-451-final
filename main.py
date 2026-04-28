@@ -1,5 +1,10 @@
 import pandas as pd
 
+from utils.utils import *
+from utils.lab_01_utils import *
+from utils.lab_02_utils import *
+from utils.lab_03_utils import *
+
 submission_df = pd.read_csv("data/sample_submission.csv")
 print(submission_df.head())
 
