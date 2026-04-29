@@ -14,23 +14,35 @@ def show_introduction_figure():
     # Define path
     path_he = "../data/data_lab_01/tcga_ag.png"
     # Check if folder and image exist
-    assert os.path.exists(path_he), "Image not found, please check directory structure"
+    assert os.path.exists(
+        path_he
+    ), "Image not found, please check directory structure"
 
     # Load image
     img_he = np.array(Image.open(path_he))
 
     # Display image
     plt.imshow(img_he)
-    plt.axis('off')
+    plt.axis("off")
 
     # Annotations
-    plt.annotate('Tumor', xy=(1250, 540), xytext=(2240, 540), arrowprops=dict(facecolor='black', shrink=0.05))
-    plt.annotate('Other', xy=(1840, 387), xytext=(2240, 387), arrowprops=dict(facecolor='black', shrink=0.05))
+    plt.annotate(
+        "Tumor",
+        xy=(1250, 540),
+        xytext=(2240, 540),
+        arrowprops=dict(facecolor="black", shrink=0.05),
+    )
+    plt.annotate(
+        "Other",
+        xy=(1840, 387),
+        xytext=(2240, 387),
+        arrowprops=dict(facecolor="black", shrink=0.05),
+    )
     plt.tight_layout()
     return img_he
 
 
-# Plot color space distribution 
+# Plot color space distribution
 def plot_colors_histo(
     img: np.ndarray,
     func: Callable,
@@ -58,34 +70,47 @@ def plot_colors_histo(
 
     # Use random seed to downsample image colors (increase run speed - 10%)
     mask = np.random.RandomState(seed=0).rand(M, N) < 0.1
-    
-    # Plot base image
-    ax = fig.add_subplot(gs[:2, :])
-    ax.imshow(img)
-    # Remove axis
-    ax.axis('off')
+
     ax1 = fig.add_subplot(gs[2, 0])
     ax2 = fig.add_subplot(gs[2, 1])
     ax3 = fig.add_subplot(gs[2, 2])
 
     # Plot channel distributions
-    ax1.scatter(channels[0][mask].flatten(), channels[1][mask].flatten(), c=img[mask]/255, s=1, alpha=0.1)
+    ax1.scatter(
+        channels[0][mask].flatten(),
+        channels[1][mask].flatten(),
+        c=img[mask] / 255,
+        s=1,
+        alpha=0.1,
+    )
     ax1.set_xlabel(labels[0])
     ax1.set_ylabel(labels[1])
     ax1.set_title("{} vs {}".format(labels[0], labels[1]))
-    ax2.scatter(channels[0][mask].flatten(), channels[2][mask].flatten(), c=img[mask]/255, s=1, alpha=0.1)
+    ax2.scatter(
+        channels[0][mask].flatten(),
+        channels[2][mask].flatten(),
+        c=img[mask] / 255,
+        s=1,
+        alpha=0.1,
+    )
     ax2.set_xlabel(labels[0])
     ax2.set_ylabel(labels[2])
     ax2.set_title("{} vs {}".format(labels[0], labels[2]))
-    ax3.scatter(channels[1][mask].flatten(), channels[2][mask].flatten(), c=img[mask]/255, s=1, alpha=0.1)
+    ax3.scatter(
+        channels[1][mask].flatten(),
+        channels[2][mask].flatten(),
+        c=img[mask] / 255,
+        s=1,
+        alpha=0.1,
+    )
     ax3.set_xlabel(labels[1])
     ax3.set_ylabel(labels[2])
     ax3.set_title("{} vs {}".format(labels[1], labels[2]))
-        
+
     plt.tight_layout()
 
 
-# Plot color space distribution 
+# Plot color space distribution
 def plot_thresholded_image(
     img: np.ndarray,
     func: Callable,
@@ -107,7 +132,7 @@ def plot_thresholded_image(
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     axes[0].imshow(img)
     axes[1].imshow(func(img), interpolation=None)
-    [a.axis('off') for a in axes]
+    [a.axis("off") for a in axes]
     plt.suptitle(title)
     plt.tight_layout()
 
@@ -130,26 +155,27 @@ def plot_images(
         The overall title of the figure
     """
     D = len(imgs)
-    ncols = int(np.ceil(D/2))
-    _, axes = plt.subplots(nrows=2, ncols=ncols, figsize=(10, 4*ncols))
-    
+    ncols = int(np.ceil(D / 2))
+    _, axes = plt.subplots(nrows=2, ncols=ncols, figsize=(10, 4 * ncols))
+
     # Remove axis
     axes = axes.ravel()
-    [ax.axis('off') for ax in axes]
-    
+    [ax.axis("off") for ax in axes]
+
     for i in range(D):
         axes[i].imshow(imgs[i])
         axes[i].set_title("Size: {}".format(sizes[i]))
-    
+
     plt.suptitle(title)
     plt.tight_layout()
+
 
 def plot_close_open(img_th, apply_closing, apply_opening):
     disk_sizes = [1, 2, 5, 10]
     imgs_closing = []
     imgs_opening = []
 
-    # Apply opening and closing to masked image 
+    # Apply opening and closing to masked image
     for d in disk_sizes:
         imgs_closing.append(apply_closing(img_th, d))
         imgs_opening.append(apply_opening(img_th, d))
@@ -165,12 +191,12 @@ def plot_remove_holes_objects(img_th, remove_holes, remove_objects):
     imgs_holes = []
     imgs_objects = []
 
-    # Remove holes and objects from masked image 
+    # Remove holes and objects from masked image
     for d in sizes:
         imgs_holes.append(remove_holes(img_th, d))
         imgs_objects.append(remove_objects(img_th, d))
-        
-    # Plot results    
+
+    # Plot results
     plot_images(imgs=imgs_holes, sizes=sizes, title="Remove small holes")
     plot_images(imgs=imgs_objects, sizes=sizes, title="Remove small objects")
 
@@ -189,17 +215,17 @@ def plot_morphology_best(
     img_best: np.ndarray (M, N)
         Best thresholded image.
     """
-    
+
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
-    
+
     # Remove axis
     axes = axes.ravel()
-    [ax.axis('off') for ax in axes]
+    [ax.axis("off") for ax in axes]
     axes[0].imshow(img_source)
     axes[1].imshow(img_best)
     axes[0].set_title("Source")
     axes[1].set_title("Tumor estimation")
-    
+
     plt.tight_layout()
 
 
@@ -208,11 +234,11 @@ def plot_region_growing(
     img: np.ndarray,
     func: Callable,
     iters: list[int],
-    **kwargs
+    **kwargs,
 ):
     """
     Plot the region growing results based on seeds, function and iterations
-    
+
     Args
     ----
     seeds: list of tuple
@@ -228,9 +254,9 @@ def plot_region_growing(
     # Define plot size
     n = len(iters) + 1
     n_rows = np.ceil(n // 2).astype(int)
-    _, axes = plt.subplots(n_rows, 2, figsize=(16, 6*n_rows))
+    _, axes = plt.subplots(n_rows, 2, figsize=(16, 6 * n_rows))
     axes = axes.ravel()
-    [a.axis('off') for a in axes]   
+    [a.axis("off") for a in axes]
 
     # Reference image
     axes[0].imshow(img)
@@ -243,9 +269,11 @@ def plot_region_growing(
         # Compute time difference in seconds
         t2 = datetime.now()
         seconds = (t2 - t1).total_seconds()
-        axes[i+1].imshow(img_rg)
-        axes[i+1].set_title("RG {} iter in {:.2f} seconds".format(iters[i], seconds))
-                            
+        axes[i + 1].imshow(img_rg)
+        axes[i + 1].set_title(
+            "RG {} iter in {:.2f} seconds".format(iters[i], seconds)
+        )
+
     plt.tight_layout()
     return img_rg
 
@@ -253,8 +281,20 @@ def plot_region_growing(
 def plot_tumor_region_growing(img_he, region_growing, **kwargs):
     # Set manual seeds (located inside tumor blobs)
     seeds = [
-        (392, 280), (581, 199), (859, 119), (184, 777), (441, 718), (1039, 526), 
-        (1255, 509), (1252, 990), (658, 1136), (732, 2000), (207, 1971), (192, 1741), (1218, 1007), (1314, 1367),
+        (392, 280),
+        (581, 199),
+        (859, 119),
+        (184, 777),
+        (441, 718),
+        (1039, 526),
+        (1255, 509),
+        (1252, 990),
+        (658, 1136),
+        (732, 2000),
+        (207, 1971),
+        (192, 1741),
+        (1218, 1007),
+        (1314, 1367),
     ]
 
     return plot_region_growing(
@@ -262,7 +302,7 @@ def plot_tumor_region_growing(img_he, region_growing, **kwargs):
         img=img_he,
         func=region_growing,
         iters=[20, 100, 2000],
-        **kwargs
+        **kwargs,
     )
 
 
@@ -270,7 +310,7 @@ def plot_final_comparison(img_he, img_th, img_best_morpho, img_grow):
     _, axes = plt.subplots(2, 2, figsize=(16, 12))
     # Remove axis
     axes = axes.ravel()
-    [a.axis('off') for a in axes]
+    [a.axis("off") for a in axes]
 
     # Original image
     axes[0].imshow(img_he)
@@ -282,41 +322,44 @@ def plot_final_comparison(img_he, img_th, img_best_morpho, img_grow):
     axes[3].imshow(img_grow)
     axes[3].set_title("Region Growing")
     plt.tight_layout()
-    
+
 
 def show_exo2_figure():
     # Load image
     path_he2 = "../data/data_lab_01/tcga_blood.png"
     # Check if folder and image exist
-    assert os.path.exists(path_he2), "Image not found, please check directory structure"
+    assert os.path.exists(
+        path_he2
+    ), "Image not found, please check directory structure"
     img_he2 = np.array(Image.open(path_he2))
 
     # Display image
     plt.figure(figsize=(14, 7))
     plt.imshow(img_he2)
-    plt.axis('off')
+    plt.axis("off")
     plt.tight_layout()
-    
+
     h, w = img_he2.shape[:2]
     plt.xlim(0, w + 280)
     ann = dict(
-    arrowprops=dict(arrowstyle='-|>', color='black', lw=2, shrinkA=0, shrinkB=0),
-    ha='left',
-    va='center',
-    annotation_clip=False
+        arrowprops=dict(
+            arrowstyle="-|>", color="black", lw=2, shrinkA=0, shrinkB=0
+        ),
+        ha="left",
+        va="center",
+        annotation_clip=False,
     )
 
     label_x = w + 40
 
-    plt.annotate('Background', xy=(315, 150), xytext=(label_x, 150), **ann)
-    plt.annotate('Blood',      xy=(206, 122), xytext=(label_x, 122), **ann)
-    plt.annotate('Mucin',      xy=(512, 404), xytext=(label_x, 404), **ann)
-
+    plt.annotate("Background", xy=(315, 150), xytext=(label_x, 150), **ann)
+    plt.annotate("Blood", xy=(206, 122), xytext=(label_x, 122), **ann)
+    plt.annotate("Mucin", xy=(512, 404), xytext=(label_x, 404), **ann)
 
     # Annotations
-    #plt.annotate('Background', xy=(315, 150), xytext=(730, 70), arrowprops=dict(facecolor='black', shrink=0.05))
-    #plt.annotate('Blood', xy=(206, 122), xytext=(730, 190), arrowprops=dict(facecolor='black', shrink=0.05))
-    #plt.annotate('Mucin', xy=(512, 404), xytext=(730, 560), arrowprops=dict(facecolor='black', shrink=0.05))
+    # plt.annotate('Background', xy=(315, 150), xytext=(730, 70), arrowprops=dict(facecolor='black', shrink=0.05))
+    # plt.annotate('Blood', xy=(206, 122), xytext=(730, 190), arrowprops=dict(facecolor='black', shrink=0.05))
+    # plt.annotate('Mucin', xy=(512, 404), xytext=(730, 560), arrowprops=dict(facecolor='black', shrink=0.05))
     plt.tight_layout()
 
     return img_he2
@@ -329,7 +372,7 @@ def plot_results(
 ):
     """
     Plot the blood and mucin detection as well as the estimated area in pixels
-    
+
     Args
     ----
     img: np.ndarray (M, N, C)
@@ -339,13 +382,13 @@ def plot_results(
     mask_mucin: np.ndarray (M, N)
         Estimation mask of the mucin area
     """
-    
+
     _, axes = plt.subplots(1, 3, figsize=(16, 6))
     [a.axis("off") for a in axes]
 
     area_blood = np.sum(mask_blood)
     area_mucin = np.sum(mask_mucin)
-    
+
     # Image
     axes[0].imshow(img)
     axes[0].set_title("Original image")
@@ -358,4 +401,3 @@ def plot_results(
     axes[2].imshow(mask_mucin, alpha=0.8)
     axes[2].set_title("Mucin detection (area: {:.0f})".format(area_mucin))
     plt.tight_layout()
-

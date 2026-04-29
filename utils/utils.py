@@ -1,4 +1,9 @@
-def chop_up_image_into_player_images(img):
+import numpy as np
+
+
+def chop_up_image_into_player_images(
+    img: np.ndarray,
+) -> tuple[list[np.ndarray], np.ndarray]:
     """
     Chop up the input image into 4 images for each player.
     Plus the center image of the table.
@@ -19,7 +24,7 @@ def chop_up_image_into_player_images(img):
     return [img_1, img_2, img_3, img_4], img_center
 
 
-def is_image_noisy(img):
+def is_image_noisy(img: np.ndarray) -> bool:
     """
     Is the image noisy or white background?
 
@@ -35,7 +40,7 @@ def is_image_noisy(img):
     return bool(noisy)
 
 
-def find_player_turn(imgs: list, noisy: bool = False):
+def find_player_turn(imgs: list[np.ndarray], noisy: bool = False) -> int:
     """
     Find the player whose turn it is.
 
@@ -61,7 +66,7 @@ def find_player_turn(imgs: list, noisy: bool = False):
     return player_turn
 
 
-def find_dark_rectangle(imgs: list):
+def find_dark_rectangle(imgs: list[np.ndarray]) -> int:
     """
     Find the player with the dark rectangle in their image.
 
@@ -76,7 +81,7 @@ def find_dark_rectangle(imgs: list):
     return 0
 
 
-def find_yellow_circle(imgs: list):
+def find_yellow_circle(imgs: list[np.ndarray]) -> int:
     """
     Find the player with the yellow circle in their image.
 
@@ -91,7 +96,7 @@ def find_yellow_circle(imgs: list):
     return 0
 
 
-def segment_cards(img):
+def segment_cards(img: np.ndarray) -> list[str]:
     """
     Segment the cards in the input image.
 
