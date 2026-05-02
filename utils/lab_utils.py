@@ -29,7 +29,7 @@ def extract_rgb_channels(img):
     # Get the shape of the input image
     M, N, C = np.shape(img)
 
-    print(f"Input image shape: {M}x{N} with {C} channels")
+    # print(f"Input image shape: {M}x{N} with {C} channels")
 
     # Define default values for RGB channels
     data_red = np.zeros((M, N))

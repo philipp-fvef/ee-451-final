@@ -1,0 +1,78 @@
+{
+  "paths": {
+    "reference_features": "data/reference_images/reference_features.npz",
+    "reference_cropped_dir": "data/reference_images/cropped",
+    "reference_output_dir": "data/reference_images",
+    "bonus_cropped_dir": "data/bonus_images/cropped",
+    "plots_dir": "plots"
+  },
+  "matching": {
+    "top_k": 5,
+    "vote_min_conf": 0.12,
+    "vote_min_count": 2
+  },
+  "feature_extraction": {
+    "num_descriptors": 64,
+    "num_points": 256,
+    "max_symbol_contours": 5,
+    "augment_halves": true,
+    "apply_opening_step": false
+  },
+  "image_processing": {
+    "valid_ext": [".jpg", ".jpeg", ".png"],
+    "preview_scale": 0.35,
+    "max_contours": 11,
+    "color_percentage_threshold": 0.55,
+    "mask": {
+      "disk_size_black": 3,
+      "disk_size_color": 5.5,
+      "opening_disk_size": 5
+    },
+    "color_thresholds": {
+      "b": {
+        "h_min": 0.4,
+        "h_max": 0.6,
+        "s_min": 0.4,
+        "s_max": 1.0,
+        "v_min": 0.75,
+        "v_max": 1.0
+      },
+      "g": {
+        "h_min": 0.2,
+        "h_max": 0.4,
+        "s_min": 0.2,
+        "s_max": 1.0,
+        "v_min": 0.3,
+        "v_max": 1.0
+      },
+      "r": {
+        "h_min": 0.97,
+        "h_max": 0.05,
+        "s_min": 0.5,
+        "s_max": 1.0,
+        "v_min": 0.75,
+        "v_max": 1.0
+      },
+      "y": {
+        "h_min": 0.1,
+        "h_max": 0.2,
+        "s_min": 0.5,
+        "s_max": 1.0,
+        "v_min": 0.75,
+        "v_max": 1.0
+      },
+      "k": {
+        "r_min": 0,
+        "r_max": 150,
+        "g_min": 0,
+        "g_max": 150,
+        "b_min": 0,
+        "b_max": 150
+      }
+    }
+  },
+  "feature_dimensions": {
+    "shape_feature_dim": 11,
+    "struct_feature_dim": 9
+  }
+}

@@ -1,0 +1,276 @@
+import argparse
+import os
+from typing import Dict, List, Optional, Tuple
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+from src.classify import classify_card_with_details
+from utils.config import get_config_value, load_config, set_global_config
+
+
+def collect_bonus_images(bonus_dir: str, valid_ext: Tuple[str, ...]) -> List[str]:
+    filenames = sorted(
+        f for f in os.listdir(bonus_dir) if f.lower().endswith(valid_ext)
+    )
+    return [os.path.join(bonus_dir, f) for f in filenames]
+
+
+GROUND_TRUTH = {
+    "bonus_01.jpg": "b_5",
+    "bonus_02.jpg": "y_2",
+    "bonus_03.jpg": "r_skip",
+    "bonus_04.jpg": "r_3",
+    "bonus_05.jpg": "y_4",
+    "bonus_06.jpg": "g_2",
+    "bonus_07.jpg": "y_1",
+    "bonus_10.jpg": "wild",
+    "bonus_11.jpg": "r_5",
+    "bonus_12.jpg": "g_6",
+    "bonus_13.jpg": "y_6",
+    "bonus_14.jpg": "b_7",
+    "bonus_15.jpg": "b_2",
+    "bonus_16.jpg": "g_6",
+    "bonus_17.jpg": "b_skip",
+    "bonus_18.jpg": "g_draw_2",
+    "bonus_19.jpg": "g_1",
+
+    # these cards may be partially obscured
+    "bonus_20.jpg": "b_3",
+    "bonus_21.jpg": "y_7",
+    "bonus_22.jpg": "g_skip",
+    "bonus_23.jpg": "g_2",
+    "bonus_24.jpg": "r_7",
+    "bonus_25.jpg": "g_1",
+    "bonus_26.jpg": "r_9",
+
+    # these cards are on a colourful background
+    "bonus_30.jpg": "r_3",
+    "bonus_31.jpg": "wild",
+    "bonus_32.jpg": "b_5",
+    "bonus_33.jpg": "g_7",
+    "bonus_34.jpg": "b_8",
+    "bonus_35.jpg": "r_8",
+    "bonus_36.jpg": "y_2",
+
+    # these cards are on a colourful background and partially obscured
+    "bonus_40.jpg": "g_1",
+    "bonus_41.jpg": "b_draw_2",
+    "bonus_42.jpg": "r_5",
+    "bonus_43.jpg": "b_8",
+    "bonus_44.jpg": "r_3",
+    "bonus_45.jpg": "r_8",
+    "bonus_46.jpg": "r_5",
+
+    # these cards are the same as bonus_01 to bonus_19, but cut in half
+    "bonus_01_a.jpg": "b_5",
+    "bonus_01_b.jpg": "b_5",
+    "bonus_02_a.jpg": "y_2",
+    "bonus_02_b.jpg": "y_2",
+    "bonus_03_a.jpg": "r_skip",
+    "bonus_03_b.jpg": "r_skip",
+    "bonus_04_a.jpg": "r_3",
+    "bonus_04_b.jpg": "r_3",
+    "bonus_05_a.jpg": "y_4",
+    "bonus_05_b.jpg": "y_4",
+    "bonus_06_a.jpg": "g_2",
+    "bonus_06_b.jpg": "g_2",
+    "bonus_07_a.jpg": "y_1",
+    "bonus_07_b.jpg": "y_1",
+    "bonus_10_a.jpg": "wild",
+    "bonus_10_b.jpg": "wild",
+    "bonus_11_a.jpg": "r_5",
+    "bonus_11_b.jpg": "r_5",
+    "bonus_12_a.jpg": "g_6",
+    "bonus_12_b.jpg": "g_6",
+    "bonus_13_a.jpg": "y_6",
+    "bonus_13_b.jpg": "y_6",
+    "bonus_14_a.jpg": "b_7",
+    "bonus_14_b.jpg": "b_7",
+    "bonus_15_a.jpg": "b_2",
+    "bonus_15_b.jpg": "b_2",
+    "bonus_16_a.jpg": "g_6",
+    "bonus_16_b.jpg": "g_6",
+    "bonus_17_a.jpg": "b_skip",
+    "bonus_17_b.jpg": "b_skip",
+    "bonus_18_a.jpg": "g_draw_2",
+    "bonus_18_b.jpg": "g_draw_2",
+    "bonus_19_a.jpg": "g_1",
+    "bonus_19_b.jpg": "g_1",
+
+    # the hardest cards but these are not ideally segmented
+    "bonus_50.jpg": "g_reverse",
+    "bonus_51.jpg": "y_5",
+    "bonus_52.jpg": "r_1",
+    "bonus_53.jpg": "r_1",
+    "bonus_54.jpg": "y_8",
+    "bonus_55.jpg": "g_2",
+}
+
+
+def load_ground_truth(image_paths: List[str]) -> Dict[str, str]:
+    truth: Dict[str, str] = {}
+    missing: List[str] = []
+    for path in image_paths:
+        filename = os.path.basename(path)
+        label = GROUND_TRUTH.get(filename)
+        if not label or label.strip().lower() == "todo":
+            missing.append(filename)
+            continue
+        truth[path] = label.strip().lower()
+
+    if missing:
+        missing_list = ", ".join(missing)
+        raise ValueError(
+            "Missing ground truth for: "
+            f"{missing_list}. Update GROUND_TRUTH in test_classification.py."
+        )
+
+    return truth
+
+
+def load_image_rgb(path: str) -> np.ndarray:
+    img_bgr = cv2.imread(path)
+    if img_bgr is None:
+        raise FileNotFoundError(f"Image not found: {path}")
+    return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+
+
+def main() -> None:
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument(
+        "--config",
+        default="config.json",
+        help="Path to JSON config with matching parameters",
+    )
+    pre_args, _ = pre_parser.parse_known_args()
+    config = load_config(pre_args.config)
+    set_global_config(config)
+
+    parser = argparse.ArgumentParser(
+        description="Evaluate classification on bonus images.",
+        parents=[pre_parser],
+    )
+    parser.add_argument(
+        "--bonus-dir",
+        default=get_config_value("paths.bonus_cropped_dir"),
+        help="Directory containing cropped bonus images",
+    )
+    parser.add_argument(
+        "--features",
+        default=get_config_value("paths.reference_features"),
+        help="Path to the reference features .npz file",
+    )
+    parser.add_argument(
+        "--save-outputs",
+        action="store_true",
+        help="Save thresholded/mask/contour outputs alongside the image",
+    )
+    parser.add_argument(
+        "--output-root",
+        default=None,
+        help="Root directory for outputs when --save-outputs is set",
+    )
+    default_opening = bool(get_config_value("feature_extraction.apply_opening_step"))
+    parser.add_argument(
+        "--opening",
+        dest="opening",
+        action="store_true",
+        default=default_opening,
+        help="Apply opening after closing for mask cleanup",
+    )
+    parser.add_argument(
+        "--no-opening",
+        dest="opening",
+        action="store_false",
+        help="Disable opening after closing for mask cleanup",
+    )
+    parser.add_argument(
+        "--plot-dir",
+        default=get_config_value("paths.plots_dir"),
+        help="Directory to save result plots",
+    )
+    parser.add_argument(
+        "--show-plots",
+        action="store_true",
+        help="Show plots interactively while saving",
+    )
+
+    args = parser.parse_args()
+    if not os.path.isdir(args.bonus_dir):
+        raise FileNotFoundError(f"Bonus directory not found: {args.bonus_dir}")
+    if not os.path.exists(args.features):
+        raise FileNotFoundError(
+            "Reference features not found. Run process_reference_images.py first."
+        )
+
+    valid_ext = tuple(get_config_value("image_processing.valid_ext"))
+    image_paths = collect_bonus_images(args.bonus_dir, valid_ext)
+    if not image_paths:
+        raise FileNotFoundError(f"No bonus images found in {args.bonus_dir}")
+
+    truth = load_ground_truth(image_paths)
+    correct = 0
+    results: List[Tuple[str, str, str]] = []
+    for path in image_paths:
+        predicted, card_colour, contours, details = classify_card_with_details(
+            path,
+            args.features,
+            save_outputs=args.save_outputs,
+            output_root=args.output_root,
+            apply_opening_step=args.opening,
+        )
+        expected = truth[path]
+        if predicted == expected:
+            correct += 1
+        results.append((os.path.basename(path), expected, predicted))
+
+        match_label = details.get("matched_label", "?")
+        match_mode = "direct"
+        if details.get("color_override"):
+            match_mode = "color-override"
+
+        best_dist = details.get("best_distance", float("inf"))
+        second_dist = details.get("second_distance", float("inf"))
+        ratio = details.get("distance_ratio", 1.0)
+        confidence = details.get("confidence", 0.0)
+        decision = details.get("decision", "top1")
+        voted_value = details.get("voted_value")
+
+        top_k = details.get("top_k", [])
+        top_k_str = ", ".join(f"{label}:{dist:.4f}" for label, dist in top_k)
+
+        print(
+            f"{os.path.basename(path)} | expected: {expected} | predicted: {predicted}"
+        )
+        """ print(
+            "  "
+            f"match: {match_label} | mode: {match_mode} | color: {card_colour} | "
+            f"contours: {len(contours)}"
+        )
+        print(
+            "  "
+            f"score: {best_dist:.4f} | second: {second_dist:.4f} | "
+            f"ratio: {ratio:.3f} | conf: {confidence:.3f} | "
+            f"candidates: {details.get('candidate_filter')} ({details.get('candidate_count')})"
+        )
+        if decision == "vote":
+            print(
+                "  "
+                f"decision: vote | voted_value: {voted_value} | "
+                f"vote_min_conf: {details.get('vote_min_conf')} | "
+                f"vote_min_count: {details.get('vote_min_count')}"
+            )
+        else:
+            print("  decision: top1")
+        if top_k_str:
+            print(f"  top{len(top_k)}: {top_k_str}") """
+
+    total = len(results)
+    accuracy = correct / total if total else 0.0
+    print(f"\nAccuracy: {correct}/{total} ({accuracy:.2%})")
+
+
+if __name__ == "__main__":
+    main()
