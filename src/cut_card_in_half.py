@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 # take a list of cards
-dir = "data/bonus_images/cropped"
+dir = "../data/bonus_images/cropped"
 file_names = [f"bonus_{i:02d}.jpg" for i in range(1, 20)]
 image_paths = [os.path.join(dir, name) for name in file_names]
 

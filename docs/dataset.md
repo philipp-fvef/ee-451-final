@@ -75,3 +75,41 @@ Due to Kaggle submission constraints:
 * Empty fields are not allowed in submission files
 * Instead, you must use the token: EMPTY
 * This applies to players with no cards/missing players.
+
+## File Structure
+
+root_directory/
+├── data/
+│   ├── reference_images/
+│   │   ├── contours/
+│   │   ├── cropped/
+│   │   ├── mask/
+│   │   └── thresholded/
+│   ├── train_images/
+│   │   ├── contours/
+│   │   ├── cropped/
+│   │   ├── mask/
+│   │   └── thresholded/
+│   ├── test_images/
+│   │   ├── contours/
+│   │   ├── cropped/
+│   │   ├── mask/
+│   │   └── thresholded/
+|   └── bonus_images/
+├── src/
+│   ├── classify.py
+│   ├── features.py
+│   ├── prepare_reference_images.py
+│   └── proces_reference_images.py
+├── utils/
+│   ├── config.py
+│   ├── lab_01_utils.py
+│   ├── lab_02_utils.py
+│   ├── lab_03_utils.py
+│   ├── lab_utils.py
+│   ├── process_utils.py
+│   └── utils.py
+├── classify.py
+├── main.py
+├── notebook.py
+└── test_classification.py

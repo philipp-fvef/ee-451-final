@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from utils.config_utils import get_config_value, load_config, set_global_config
+from utils.config import get_config_value, load_config, set_global_config
 from utils.process_utils import (
     align_descriptor,
     classify_descriptor,
