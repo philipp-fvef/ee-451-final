@@ -19,10 +19,41 @@ for index, row in submission_df.iterrows():
 
     image_path = os.path.join("data/test_images", f"{image_id}.jpg")
 
-    # Classify the card
-    center_card = "EMPTY"
+    # Crop the image into player areas and the center card area
+    center_card_img, player_imgs = None, [None] * 4
+
     active_player = "EMPTY"
+    center_card = "EMPTY"
     player_cards = ["EMPTY"] * 4
+
+    # ----------------------
+    # Classify the active player
+    # p1, p2, p3, p4
+    # ----------------------
+
+    # ----------------------
+    # Classify the center card
+    # ----------------------
+
+    # Classify the player cards
+    for i, player_img in enumerate(player_imgs):
+        cropped_cards = []
+        cards = []
+
+        # ----------------------
+        # segment out the cards
+        # ----------------------
+
+        for cropped_card in cropped_cards:
+
+            # ----------------------
+            # classify the card
+            # ----------------------
+            
+            card_value = None
+            cards.append(card_value)
+        # if cards were detected, join them with ';' and update player_cards
+        if cards: player_cards[i] = ";".join(cards)
 
     # Save results
     submission_df.at[index, "center_card"] = center_card
@@ -32,4 +63,4 @@ for index, row in submission_df.iterrows():
 
 # Save the submission file with a timestamp
 datetime_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-submission_df.to_csv(f"data/submission_{datetime_str}.csv", index=False)
+submission_df.to_csv(f"data/submission_{datetime_str}.csv", sep=",", index=False)

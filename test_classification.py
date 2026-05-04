@@ -1,5 +1,5 @@
 """
-# Test classification script for UNO cards
+# Test card classification script for UNO cards
 2024-06-01 | Philipp
 
 ## Preparation:
