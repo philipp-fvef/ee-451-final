@@ -71,6 +71,28 @@
       }
     }
   },
+  "segmentation": {
+    "white_sat_max": 50,
+    "white_val_min": 170,
+    "open_kernel_size": 8,
+    "canny_low": 50,
+    "canny_high": 150,
+    "hough_threshold": 50,
+    "hough_min_length": 15,
+    "hough_max_gap": 15,
+    "dedup_angle_tol": 1,
+    "dedup_dist_tol": 1,
+    "angle_tol": 1,
+    "right_angle_tol": 1,
+    "border_min": 15,
+    "border_max": 35,
+    "card_short": 325,
+    "card_long": 512,
+    "card_dim_tol": 20,
+    "card_w_out": 224,
+    "card_h_out": 347,
+    "score_threshold": 0.7
+  },
   "feature_dimensions": {
     "shape_feature_dim": 11,
     "struct_feature_dim": 9

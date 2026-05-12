@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -14,14 +14,17 @@ from utils.process_utils import classify_descriptor_with_details, process_card_i
 
 
 def classify_card(
-    cropped_path: str,
-    features_path: str,
+    cropped: Union[str, np.ndarray],
+    features_path: Optional[str] = None,
     save_outputs: bool = False,
     output_root: Optional[str] = None,
     apply_opening_step: Optional[bool] = None,
 ) -> Tuple[str, str, List[np.ndarray]]:
+    if features_path is None:
+        features_path = get_config_value("paths.reference_features")
+
     card_value, card_colour, contours, _ = classify_card_with_details(
-        cropped_path,
+        cropped,
         features_path,
         save_outputs=save_outputs,
         output_root=output_root,
@@ -31,14 +34,14 @@ def classify_card(
 
 
 def classify_card_with_details(
-    cropped_path: str,
+    cropped: Union[str, np.ndarray],
     features_path: str,
     save_outputs: bool = False,
     output_root: Optional[str] = None,
     apply_opening_step: Optional[bool] = None,
 ) -> Tuple[str, str, List[np.ndarray], dict]:
     result = process_card_image(
-        cropped_path,
+        cropped,
         output_root=output_root,
         save_outputs=save_outputs,
         apply_opening_step=apply_opening_step,

@@ -154,8 +154,16 @@ def process_card_image(
     """
     Process a cropped card image and optionally save thresholded/mask/contour outputs.
     """
-    cropped_dir = os.path.dirname(cropped_path)
-    parent_dir = os.path.dirname(cropped_dir)
+    # Allow passing either a filesystem path or an in-memory image (ndarray)
+    is_array = False
+    if not isinstance(cropped_path, str):
+        is_array = True
+    if is_array:
+        cropped_dir = output_root or os.getcwd()
+        parent_dir = os.path.dirname(cropped_dir)
+    else:
+        cropped_dir = os.path.dirname(cropped_path)
+        parent_dir = os.path.dirname(cropped_dir)
     if output_root is None:
         output_root = parent_dir
 
@@ -168,7 +176,17 @@ def process_card_image(
         os.makedirs(mask_dir, exist_ok=True)
         os.makedirs(contours_dir, exist_ok=True)
 
-    img_rgb = load_image_rgb(cropped_path)
+    # Load image: accept path or ndarray (assumed BGR)
+    if is_array:
+        img_bgr = np.asarray(cropped_path)
+        if img_bgr.ndim != 3 or img_bgr.shape[2] != 3:
+            raise ValueError("Image ndarray must be HxWx3 BGR or RGB array")
+        # assume BGR input (matches OpenCV conventions used elsewhere)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        filename_stem = "image"
+    else:
+        img_rgb = load_image_rgb(cropped_path)
+        filename_stem = os.path.splitext(os.path.basename(cropped_path))[0]
 
     preview_scale = float(get_config_value("image_processing.preview_scale"))
     preview_rgb = cv2.resize(
@@ -189,8 +207,6 @@ def process_card_image(
     img_result_rgb = (img_rgb * img_thresholded_filled[..., None]).astype(np.uint8)
 
     if save_outputs:
-        filename_stem = os.path.splitext(os.path.basename(cropped_path))[0]
-
         threshold_path = os.path.join(threshold_dir, f"{filename_stem}_th.png")
         if verb:
             print("\tSaving thresholded image to:", threshold_path)
@@ -211,10 +227,7 @@ def process_card_image(
             opencv_contours.append(contour)
         cv2.drawContours(contour_img, opencv_contours, -1, 255, 2)
 
-        contours_path = os.path.join(
-            contours_dir,
-            f"{os.path.splitext(os.path.basename(cropped_path))[0]}_contours.png",
-        )
+        contours_path = os.path.join(contours_dir, f"{filename_stem}_contours.png")
         if verb:
             print("\tSaving contours to:", contours_path)
         cv2.imwrite(contours_path, contour_img)
