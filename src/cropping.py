@@ -126,11 +126,11 @@ def get_sector_polygons(img):
 def extract_sector(img, polygon):
     """
     Extract a sector from an image using a polygon mask.
-    
+
     Args:
         img: PIL Image object
         polygon: List of (x, y) coordinates defining the sector polygon
-        
+
     Returns:
         tuple: (sector_crop, mask_crop) - cropped sector image and its mask
     """
@@ -149,3 +149,63 @@ def extract_sector(img, polygon):
     mask_crop = mask.crop(bbox)
 
     return sector_crop, mask_crop
+
+
+def point_in_polygon(point, polygon):
+    """
+    Check if a point is inside a polygon using ray casting algorithm.
+
+    Args:
+        point: tuple (x, y)
+        polygon: list of (x, y) tuples defining the polygon
+
+    Returns:
+        bool: True if point is inside polygon, False otherwise
+    """
+    x, y = point
+    n = len(polygon)
+    inside = False
+
+    p1x, p1y = polygon[0]
+    for i in range(1, n + 1):
+        p2x, p2y = polygon[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or x <= xinters:
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+
+    return inside
+
+
+def assign_cards_to_players(detected_cards, polygons):
+    """
+    Assign detected cards to players based on their center coordinates.
+
+    Args:
+        detected_cards: list of card dicts with 'center' key (x, y)
+        polygons: dict of sector polygons from get_sector_polygons()
+
+    Returns:
+        dict: {player_name: [cards]} mapping player regions to detected cards
+    """
+    player_cards = {
+        "Center": [],
+        "Player 1": [],
+        "Player 2": [],
+        "Player 3": [],
+        "Player 4": []
+    }
+
+    for card in detected_cards:
+        center = card['center']
+
+        for sector_name, polygon in polygons.items():
+            if point_in_polygon(center, polygon):
+                player_cards[sector_name].append(card)
+                break
+
+    return player_cards

@@ -178,11 +178,10 @@ def process_card_image(
 
     # Load image: accept path or ndarray (assumed BGR)
     if is_array:
-        img_bgr = np.asarray(cropped_path)
-        if img_bgr.ndim != 3 or img_bgr.shape[2] != 3:
-            raise ValueError("Image ndarray must be HxWx3 BGR or RGB array")
-        # assume BGR input (matches OpenCV conventions used elsewhere)
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        img_rgb = np.asarray(cropped_path)
+        if img_rgb.ndim != 3 or img_rgb.shape[2] != 3:
+            raise ValueError("Image ndarray must be HxWx3 RGB array")
+        # assume RGB input (matches OpenCV conventions used elsewhere)
         filename_stem = "image"
     else:
         img_rgb = load_image_rgb(cropped_path)
@@ -549,7 +548,18 @@ def compute_reference_features(
             features.append(descriptor)
 
         def _strip_variant_suffix(label: str) -> str:
-            for suffix in ["_a", "_b", "_top", "_bottom", "_left", "_right"]:
+            for suffix in [
+                "_a",
+                "_b",
+                "_c",
+                "_d",
+                "_e",
+                "_f",
+                "_top",
+                "_bottom",
+                "_left",
+                "_right",
+            ]:
                 if label.endswith(suffix):
                     return label[:-len(suffix)]
             return label
@@ -558,20 +568,23 @@ def compute_reference_features(
             img_rgb = result["img_rgb"]
             height, width = img_rgb.shape[:2]
             half_width = max(1, width // 2)
-            half_height = max(1, height // 2)
-            halves = [
+            third_width = max(1, width // 3)
+            third_height = max(1, height // 3)
+            partials = [
                 ("a", img_rgb[:, :half_width]),
                 ("b", img_rgb[:, half_width:]),
-                ("top", img_rgb[:half_height, :]),
-                ("bottom", img_rgb[half_height:, :]),
+                ("c", img_rgb[:, :third_width]),
+                ("d", img_rgb[:, 2 * third_width :]),
+                ("e", img_rgb[:third_height, :]),
+                ("f", img_rgb[2 * third_height :, :]),
             ]
 
-            for suffix, half_img in halves:
-                if half_img.size == 0:
+            for suffix, partial_img in partials:
+                if partial_img.size == 0:
                     continue
                 preview_scale = float(get_config_value("image_processing.preview_scale"))
                 preview_rgb = cv2.resize(
-                    half_img,
+                    partial_img,
                     None,
                     fx=preview_scale,
                     fy=preview_scale,
@@ -579,22 +592,22 @@ def compute_reference_features(
                 )
                 card_colour = get_card_colour(preview_rgb)
 
-                half_thresholded = build_card_mask(
-                    half_img,
+                partial_thresholded = build_card_mask(
+                    partial_img,
                     card_colour,
                     apply_opening_step=apply_opening_step,
                 )
-                half_contours = find_contours_in_image(half_thresholded)
-                half_descriptor = compute_descriptor_from_contours(
-                    half_contours,
+                partial_contours = find_contours_in_image(partial_thresholded)
+                partial_descriptor = compute_descriptor_from_contours(
+                    partial_contours,
                     num_descriptors=num_descriptors,
                     num_points=num_points,
                     max_symbol_contours=max_symbol_contours,
                 )
-                if half_descriptor is None:
+                if partial_descriptor is None:
                     continue
                 labels.append(f"{base_label}_{suffix}")
-                features.append(half_descriptor)
+                features.append(partial_descriptor)
 
     shape_dim = int(get_config_value("feature_dimensions.shape_feature_dim"))
     struct_dim = int(get_config_value("feature_dimensions.struct_feature_dim"))
@@ -694,7 +707,7 @@ def load_reference_features(
 
 
 def parse_reference_label(label: str) -> Tuple[str, str]:
-    for suffix in ("_bottom", "_top", "_left", "_right", "_a", "_b"):
+    for suffix in ("_bottom", "_top", "_left", "_right", "_a", "_b", "_c", "_d", "_e", "_f"):
         if label.endswith(suffix):
             label = label[: -len(suffix)]
             break

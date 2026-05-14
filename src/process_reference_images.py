@@ -1,5 +1,9 @@
 import argparse
 
+# add parent directory to path for config imports
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.config import get_config_value, load_config, set_global_config
 from utils.process_utils import compute_reference_features
 

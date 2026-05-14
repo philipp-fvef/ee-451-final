@@ -40,6 +40,7 @@ def classify_card_with_details(
     output_root: Optional[str] = None,
     apply_opening_step: Optional[bool] = None,
 ) -> Tuple[str, str, List[np.ndarray], dict]:
+    
     result = process_card_image(
         cropped,
         output_root=output_root,

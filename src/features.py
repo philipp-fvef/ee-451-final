@@ -325,7 +325,18 @@ def load_reference_features(
 
 
 def parse_reference_label(label: str) -> Tuple[str, str]:
-    for suffix in ("_bottom", "_top", "_left", "_right", "_a", "_b"):
+    for suffix in (
+        "_bottom",
+        "_top",
+        "_left",
+        "_right",
+        "_a",
+        "_b",
+        "_c",
+        "_d",
+        "_e",
+        "_f",
+    ):
         if label.endswith(suffix):
             label = label[: -len(suffix)]
             break

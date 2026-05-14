@@ -4,6 +4,9 @@ from typing import Any, Dict
 
 import cv2
 
+# add parent directory to path for config imports
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.config import get_config_value, load_config, set_global_config
 
 REFERENCE_IMAGES = {
