@@ -1,19 +1,18 @@
 import pandas as pd
 import numpy as np
 import cv2
+import os
+from datetime import datetime
 from PIL import Image
 
 from utils.utils import *
-from utils.lab_01_utils import *
-from utils.lab_02_utils import *
-from utils.lab_03_utils import *
 
 from src.cropping import get_sector_polygons, extract_sector, assign_cards_to_players
 from src.segmentation_border import segmented_cards
 from src.classify import classify_card
-from utils.config import load_config, set_global_config
+from src.config import load_config, set_global_config
 
-mode = "train" # test ot train
+mode = "test" # test ot train
 
 if mode == "test":
     submission_df = pd.read_csv("data/sample_submission.csv")

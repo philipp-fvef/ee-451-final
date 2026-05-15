@@ -3,13 +3,26 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from utils.config import get_config_value
+from src.config import get_config_value
 from utils.lab_utils import rotation_invariant, scaling_invariant, translation_invariant
 
 
 def contour_shape_features(
     contour: np.ndarray,
 ) -> Optional[np.ndarray]:
+
+    """
+    Compute shape features for a single contour, including aspect ratio, extent, solidity, circularity, and Hu moments.
+
+    Args:
+        contour: A single contour represented as a numpy array of shape (N, 2), where N is the number of points in the contour.
+
+    Returns:
+        A numpy array of shape (shape_feature_dim,) containing the computed shape features, or None if the contour is invalid.
+
+    """
+
+
     contour = np.asarray(contour, dtype=np.float32)
     if contour.ndim != 2 or contour.shape[1] != 2:
         return None
@@ -47,6 +60,25 @@ def contour_shape_features(
 def contour_structural_features(
     contours: List[np.ndarray],
 ) -> np.ndarray:
+    
+    """
+    Summarize structural features across a list of contours, including number of contours, area ratios, perimeter stats, centroid spread, and coverage.
+
+    Args:
+        contours: A list of contours, where each contour is a numpy array of shape (N, 2).
+    Returns:
+        A numpy array of shape (struct_feature_dim,) containing the computed structural features:
+        - num_contours: Total number of contours
+        - ratio1: Area of largest contour / total area
+        - ratio2: Area of second largest contour / total area
+        - ratio3: Area of third largest contour / total area
+        - area_cv: Coefficient of variation of contour areas
+        - mean_perimeter_norm: Mean contour perimeter normalized by max perimeter
+        - spread_x: Standard deviation of contour centroids in x direction normalized by range
+        - spread_y: Standard deviation of contour centroids in y direction normalized by range
+        - coverage: Total contour area / bounding box area of all contours
+    """
+
     struct_dim = int(get_config_value("feature_dimensions.struct_feature_dim"))
 
     if not contours:
@@ -137,6 +169,15 @@ def resample_contour(
     contour: np.ndarray,
     num_points: Optional[int] = None,
 ) -> Optional[np.ndarray]:
+    
+    """
+    Resample a contour to a fixed number of points evenly spaced along its length.
+    Args:
+        contour: A single contour represented as a numpy array of shape (N, 2), where N is the number of points in the contour.
+        num_points: The desired number of points in the resampled contour. If None, will use value from config.
+    Returns:
+        A numpy array of shape (num_points, 2) containing the resampled contour points, or None if the input contour is invalid.
+    """
     if num_points is None:
         num_points = int(get_config_value("feature_extraction.num_points"))
     contour = np.asarray(contour, dtype=np.float64)
@@ -173,6 +214,8 @@ def contour_to_fourier_descriptor(
     num_descriptors: Optional[int] = None,
     num_points: Optional[int] = None,
 ) -> Optional[np.ndarray]:
+    """
+    """
     if num_descriptors is None or num_points is None:
         if num_descriptors is None:
             num_descriptors = int(get_config_value("feature_extraction.num_descriptors"))

@@ -20,8 +20,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.classify import classify_card_with_details
-from utils.config import get_config_value, load_config, set_global_config
+from src.classify import classify_card
+from src.config import get_config_value, load_config, set_global_config
 
 
 def collect_bonus_images(bonus_dir: str, valid_ext: Tuple[str, ...]) -> List[str]:
@@ -291,12 +291,13 @@ def main() -> None:
     correct = 0
     results: List[Tuple[str, str, str]] = []
     for path in image_paths:
-        predicted, card_colour, contours, details = classify_card_with_details(
+        predicted, card_colour, contours, details = classify_card(
             path,
             args.features,
             save_outputs=args.save_outputs,
             output_root=args.output_root,
             apply_opening_step=args.opening,
+            include_details=True,
         )
         expected = truth[path]
         if predicted == expected:

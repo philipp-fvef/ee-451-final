@@ -1,13 +1,9 @@
-import argparse
 import os
-from typing import Any, Dict
+from typing import Dict, Any
+
+from src.config import get_config_value, load_config, set_global_config
 
 import cv2
-
-# add parent directory to path for config imports
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.config import get_config_value, load_config, set_global_config
 
 REFERENCE_IMAGES = {
     "data/reference_images/L1000765.jpg": {
@@ -92,20 +88,9 @@ def crop_reference_images(output_dir: str) -> None:
             cv2.imwrite(out_path, cv2.cvtColor(cropped_rgb, cv2.COLOR_RGB2BGR))
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Crop reference images into cards.")
-    parser.add_argument(
-        "--config",
-        default="config.json",
-        help="Path to JSON config with pipeline defaults",
-    )
-    args = parser.parse_args()
-
-    config: Dict[str, Any] = load_config(args.config)
+if __name__ == "__main__":
+    config = load_config("config.json")
     set_global_config(config)
+    
     output_dir = get_config_value("paths.reference_cropped_dir")
     crop_reference_images(output_dir)
-
-
-if __name__ == "__main__":
-    main()

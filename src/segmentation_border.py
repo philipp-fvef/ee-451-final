@@ -3,32 +3,7 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-# set up path to import from utils
-from pathlib import Path
-import sys, os
-
-def find_repo_root(start: Path = Path.cwd(), markers=("utils", ".git", "pyproject.toml", "setup.py")) -> Path:
-    p = start.resolve()
-    for _ in range(10):
-        for m in markers:
-            if (p / m).exists():
-                return p
-        if p.parent == p:
-            break
-        p = p.parent
-    raise RuntimeError(f"Could not find project root (markers: {markers})")
-
-repo_root = find_repo_root()
-sys.path.insert(0, str(repo_root))
-print("repo_root:", repo_root)
-
-from utils.config import load_config, set_global_config
-cfg_path = repo_root / "config.json"
-if not cfg_path.exists():
-    raise FileNotFoundError(f"Config not found: {cfg_path}")
-set_global_config(load_config(str(cfg_path)))
-
-from utils.process_utils import apply_colour_threshold
+from src.utils import apply_colour_threshold
 
 
 WHITE_SAT_MAX = 125
@@ -342,16 +317,3 @@ def segmented_cards(image, config_path='config.json', return_coords=False, plot=
         return card_results
 
     return [c['crop'] for c in card_results]
-
-
-if __name__ == "__main__":
-    test_image = repo_root / "data/train_images/L1000905.jpg"
-    # check if file exists
-    if not os.path.isfile(test_image):
-        raise FileNotFoundError(f"Test image not found: {test_image}")
-    img_bgr = cv2.imread(test_image)
-    img_rgb = cv2.cvtColor(src=img_bgr,
-                           code=cv2.COLOR_BGR2RGB)
-
-    cards = segmented_cards(img_rgb, plot=True)
-    plt.show()
