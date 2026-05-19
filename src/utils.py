@@ -500,7 +500,7 @@ def apply_colour_threshold(
     """Apply a threshold in HSV space to extract a card of a specific color."""
     thresholds = get_config_value(f"image_processing.color_thresholds.{color}")
     if color == "k":
-        img_th = apply_rgb_threshold(
+        """ img_th = apply_rgb_threshold(
             img_rgb,
             r_min=int(thresholds["r_min"]),
             r_max=int(thresholds["r_max"]),
@@ -508,7 +508,17 @@ def apply_colour_threshold(
             g_max=int(thresholds["g_max"]),
             b_min=int(thresholds["b_min"]),
             b_max=int(thresholds["b_max"]),
+        ) """
+        img_th = apply_hsv_threshold(
+            img_rgb,
+            h_min=float(thresholds["h_min"]),
+            h_max=float(thresholds["h_max"]),
+            s_min=float(thresholds["s_min"]),
+            s_max=float(thresholds["s_max"]),
+            v_min=float(thresholds["v_min"]),
+            v_max=float(thresholds["v_max"]),
         )
+        # print("applied black hsv threshold")
     elif color in ("r", "g", "b", "y"):
         img_th = apply_hsv_threshold(
             img_rgb,

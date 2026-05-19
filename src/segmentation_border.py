@@ -12,10 +12,12 @@ WHITE_VAL_MIN = 200
 WHITE_BORDER_WIDTH = 20
 WHITE_RATIO_THRESH = 0.69
 MIN_REGION_AREA = 7000
+MIN_AREA_RATIO = 0.25
+MAX_AREA_RATIO = 0.4
 
-MERGING_IOU_THRESH = 0.02
-MERGING_ANGLE_TOL = 10
-
+# 
+MAX_GAP = 30
+MERGING_ANGLE_TOL = 1
 
 def get_white_mask(img, plot=False):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -50,6 +52,8 @@ def detect_colour_regions_with_white_border(
     min_area=MIN_REGION_AREA,
 ):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_width, border_width))
+
+    # apply morphological closing to connect nearby components and create a more complete border
     colour_mask = cv2.morphologyEx(colour_mask, cv2.MORPH_CLOSE, kernel)
 
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
@@ -76,6 +80,65 @@ def detect_colour_regions_with_white_border(
         ratio = white_pixels / ring_pixels
 
         if ratio <= white_ratio_thresh:
+            continue
+
+        component_for_rect = cv2.dilate(component, kernel)
+
+        contours, _ = cv2.findContours(
+            component_for_rect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        if not contours:
+            continue
+
+        cnt = max(contours, key=cv2.contourArea)
+        rect = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rect).astype(np.int32)
+
+        regions.append((rect, box, ratio))
+
+    return regions
+
+
+def detect_black_regions_with_white_border(img_bgr,
+    white_mask,
+    colour_mask,
+    border_width=WHITE_BORDER_WIDTH,
+    bbox_ratio_min=MIN_AREA_RATIO,
+    max_area_ratio=MAX_AREA_RATIO,
+    min_area=MIN_REGION_AREA,):
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_width, border_width))
+    # apply morphological closing to connect nearby components and create a more complete border
+    colour_mask = cv2.morphologyEx(colour_mask, cv2.MORPH_CLOSE, kernel)
+
+    # plot the black mask to check if it's working correctly.
+    if False:
+        plt.figure(figsize=(12,7))
+        plt.imshow(colour_mask, cmap='gray')
+        plt.axis("off")
+        plt.title("Black mask after closing")
+        plt.show()
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        colour_mask, connectivity=8
+    )
+
+    regions = []
+
+    for i in range(1, num_labels):
+        area = stats[i, cv2.CC_STAT_AREA]
+
+        if area < min_area:
+            continue
+
+        component = (labels == i).astype(np.uint8) * 255
+
+        # check if the region is not squiggly (which is common for black noise) by comparing the area to the bounding box area
+        x, y, w, h = stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]
+        bbox_area = w * h
+        ratio = area / bbox_area if bbox_area > 0 else 0
+        # print(f"Black region {i}: area={area}, bbox_area={bbox_area}, ratio={ratio}")
+        if bbox_area == 0 or ratio < bbox_ratio_min or ratio > max_area_ratio:
             continue
 
         component_for_rect = cv2.dilate(component, kernel)
@@ -124,8 +187,14 @@ def merge_rectangles(rect1, rect2):
     return merged_rect
 
 
+def rects_are_close(rect1, rect2, expansion):
+    shape = (10000, 10000)  # large enough canvas
+    mask1 = make_rotated_rect_mask(shape, rect1, expansion=expansion)
+    mask2 = make_rotated_rect_mask(shape, rect2, expansion=expansion)
+    return np.any((mask1 > 0) & (mask2 > 0))
+
+
 def merge_overlapping_regions(regions,
-                              iou_thresh=MERGING_IOU_THRESH,
                               angle_tol=MERGING_ANGLE_TOL,
                               max_iters=10):
     def angle_diff(a, b):
@@ -160,12 +229,12 @@ def merge_overlapping_regions(regions,
                 perpendicular = abs(diff - 90) < angle_tol
 
                 if not (parallel or perpendicular):
+                    # print(f"Skipping merge due to angle difference: {diff:.2f} degrees")
                     continue
 
-                iou = rotated_iou(merged_rect, rect2)
-
-                if iou < iou_thresh:
+                if not rects_are_close(merged_rect, rect2, expansion=MAX_GAP // 2):
                     continue
+
 
                 merged_rect = merge_rectangles(merged_rect, rect2)
                 merged_score = max(merged_score, score2)
@@ -181,6 +250,36 @@ def merge_overlapping_regions(regions,
         merged = new_regions
 
     return merged
+
+
+def discard_contained_regions(regions):
+    to_discard = set()
+
+    for i in range(len(regions)):
+        for j in range(len(regions)):
+            if i == j or i in to_discard:
+                continue
+
+            rect_i = regions[i][0]
+            rect_j = regions[j][0]
+
+            area_i = rect_i[1][0] * rect_i[1][1]
+            area_j = rect_j[1][0] * rect_j[1][1]
+
+            if area_i >= area_j:
+                continue  # only check if i is the smaller
+
+            retval, intersection = cv2.rotatedRectangleIntersection(rect_i, rect_j)
+
+            if retval == 0 or intersection is None:
+                continue
+
+            inter_area = cv2.contourArea(intersection)
+
+            if inter_area / area_i > 0.95:  # tolerance for floating point
+                to_discard.add(i)
+
+    return [r for idx, r in enumerate(regions) if idx not in to_discard]
 
 
 def order_box_points(pts):
@@ -236,7 +335,7 @@ def segmented_cards(image, config_path='config.json', return_coords=False, plot=
         ("green", green_mask),
         ("blue", blue_mask),
         ("red", red_mask),
-        ("black", black_mask),
+        
     ]:
         regions = detect_colour_regions_with_white_border(
             img,
@@ -248,7 +347,21 @@ def segmented_cards(image, config_path='config.json', return_coords=False, plot=
             rect, box, score = r
             all_regions.append((rect, box, score, color_name))
 
+    for color_name, mask in [
+        ("black", black_mask),
+    ]:
+        regions = detect_black_regions_with_white_border(
+            img,
+            white_mask,
+            mask.astype(np.uint8) * 255
+        )
+
+        for r in regions:
+            rect, box, score = r
+            all_regions.append((rect, box, score, color_name))
+
     all_regions = merge_overlapping_regions(all_regions)
+    all_regions = discard_contained_regions(all_regions)
 
     if plot:
         vis = img.copy()

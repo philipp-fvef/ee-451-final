@@ -255,10 +255,10 @@ def _match_descriptor_to_reference(
 
     if descriptor is None or len(labels) == 0:
         return {
-            "predicted_label": "?",
-            "matched_label": "?",
-            "matched_colour": "?",
-            "matched_value": "?",
+            "predicted_label": None,
+            "matched_label": None,
+            "matched_colour": None,
+            "matched_value": None,
             "color_override": False,
             "candidate_filter": "none",
             "candidate_count": 0,

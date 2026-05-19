@@ -5,9 +5,8 @@ import os
 from datetime import datetime
 from PIL import Image
 
-from utils.utils import *
-
 from src.cropping import get_sector_polygons, extract_sector, assign_cards_to_players
+from src.active import detect_active_player
 from src.segmentation_border import segmented_cards
 from src.classify import classify_card
 from src.config import load_config, set_global_config
@@ -34,6 +33,11 @@ set_global_config(config)
 
 # iterate over rows of the submission dataframe
 for index, row in submission_df.iterrows():
+
+    active_player = "EMPTY"
+    center_card = "EMPTY"
+    player_cards = ["EMPTY"] * 4
+
     image_id = row["image_id"]
     print(f"Processing {image_id}...")
 
@@ -44,6 +48,9 @@ for index, row in submission_df.iterrows():
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     img_pil_rgb = Image.fromarray(img_rgb)
 
+    active_player = detect_active_player(img_rgb)["active_player"]
+    print(f"Active player: {active_player}")
+
     # Get sector polygons for player regions
     polygons = get_sector_polygons(img_pil_rgb)
 
@@ -53,19 +60,18 @@ for index, row in submission_df.iterrows():
     # Assign cards to players based on their coordinates
     player_cards_dict = assign_cards_to_players(detected_cards_with_coords, polygons)
 
-    active_player = "EMPTY"
-    center_card = "EMPTY"
-    player_cards = ["EMPTY"] * 4
-
     # Classify center card
     center_cards = player_cards_dict["Center"]
     if center_cards:
         center_segmented = segmented_cards(center_cards[0]['crop'], plot=False)
         if center_segmented:
             center_value, center_colour, _ = classify_card(center_segmented[0])
-            center_card = center_value
+            if center_value is not None:
+                center_card = center_value
         else:
-            center_value = "EMPTY"
+            center_card = "EMPTY"
+
+    print(f"Center card: {center_card}")
 
     # Classify player cards
     player_names = ["Player 1", "Player 2", "Player 3", "Player 4"]
@@ -76,23 +82,23 @@ for index, row in submission_df.iterrows():
         for card_info in cards:
             card_crop = card_info['crop']
             card_value, card_colour, _ = classify_card(card_crop)
-            classified_cards.append(card_value)
+
+            if card_value is not None:
+                classified_cards.append(card_value)
 
         # if cards were detected, join them with ';' and update player_cards
         if classified_cards:
             player_cards[i] = ";".join(classified_cards)
 
-
-    print(f"Center card: {center_card}")
     for i, cards in enumerate(player_cards, start=1):
         print(f"Player {i} cards: {cards}")
 
     # Save results
-    submission_df.at[index, "center_card"] = center_value
+    submission_df.at[index, "center_card"] = center_card
     submission_df.at[index, "active_player"] = active_player
     for i in range(4):
         submission_df.at[index, f"player_{i+1}_cards"] = player_cards[i]
 
 # Save the submission file with a timestamp
 datetime_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-submission_df.to_csv(f"data/{mode}_submission_{datetime_str}.csv", sep=",", index=False)
+submission_df.to_csv(f"data/output/{mode}_submission_{datetime_str}.csv", sep=",", index=False)
