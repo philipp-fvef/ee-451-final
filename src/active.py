@@ -494,7 +494,7 @@ def detect_yellow_circular_marker_hough(
     return False
 
 
-def detect_active_player(img_input) -> Dict[str, any]:
+def detect_active_player(img_input, debug=False) -> Dict[str, any]:
     """
     Main function to detect the active player in an UNO game image.
     
@@ -512,6 +512,7 @@ def detect_active_player(img_input) -> Dict[str, any]:
             - numpy array (H, W, 3)
             - PIL Image
             - str (file path)
+        debug: Boolean indicating if debug information should be printed
     
     Returns:
         Dictionary containing:
@@ -559,10 +560,10 @@ def detect_active_player(img_input) -> Dict[str, any]:
         
         if is_noisy:
             # Look for yellow circular marker
-            has_marker = detect_yellow_circular_marker_hough(sector_img, mask_img, debug=False)
+            has_marker = detect_yellow_circular_marker_hough(sector_img, mask_img, debug=debug)
         else:
             # Look for black rectangular marker
-            has_marker = detect_black_rectangular_marker_debug(sector_img, mask_img, debug=False)
+            has_marker = detect_black_rectangular_marker_debug(sector_img, mask_img, debug=debug)
             #return False
         
         detections[sector_name] = has_marker
