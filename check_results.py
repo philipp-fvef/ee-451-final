@@ -99,25 +99,35 @@ for _, row in merged_df.iterrows():
         truth_cards = row[f"player_{player}_cards_truth_list"]
         pred_cards = row[f"player_{player}_cards_pred_list"]
 
-        # Count misclassified cards (in truth but not in pred)
+        # False Negatives: card exists in truth but not predicted
         for card in set(truth_cards):
             if card not in pred_cards:
                 misclassified_fn.append(card)
 
-        # Count misclassified cards (in pred but not in truth)
+        # False Positives: card predicted but not in truth
         for card in set(pred_cards):
             if card not in truth_cards:
                 misclassified_fp.append(card)
 
-# Calculate as percentage of true occurrences
+# Count total true occurrences
 truth_card_counts = Counter()
 for cards in merged_df[[f"player_{p}_cards_truth_list" for p in range(1, 5)]].values.flatten():
     truth_card_counts.update(cards)
-print("\nMisclassified Cards (False Negatives):")
-for card, count in truth_card_counts.most_common(10):
+
+# Compute miss statistics
+miss_stats = []
+
+for card, total_count in truth_card_counts.items():
     fn_count = misclassified_fn.count(card)
-    fn_rate = (fn_count / count) * 100 if count > 0 else 0
-    print(f"{card}: {fn_count} missed out of {count} occurrences ({fn_rate:.2f}%)")
+    miss_rate = (fn_count / total_count) * 100 if total_count > 0 else 0
+    miss_stats.append((card, fn_count, total_count, miss_rate))
+
+# Sort by relative miss rate (descending)
+miss_stats.sort(key=lambda x: x[3], reverse=True)
+
+print("\nMisclassified Cards (False Negatives) sorted by Miss Rate:")
+for card, fn_count, total_count, miss_rate in miss_stats[:11]:
+    print(f"{card}: {fn_count} missed out of {total_count} occurrences ({miss_rate:.2f}%)")
 
 # Print top misclassified cards
 
@@ -158,3 +168,113 @@ for _, row in merged_df.iterrows():
 print(f"\nCard Count Detection Accuracy: {correct_detections / (total_images * 4):.4f}")
 print(f"Under Detections: {under_detections} ({under_detections / (total_images * 4):.4f})")
 print(f"Over Detections: {over_detections} ({over_detections / (total_images * 4):.4f})")
+
+# -----------------------------
+# 8. Colour and symbol metrics
+# -----------------------------
+COLOUR_PREFIXES = {"r", "g", "b", "y"}
+
+def parse_colour(card: str):
+    if not card:
+        return None
+    prefix = card.split("_")[0]
+    return prefix if prefix in COLOUR_PREFIXES else "black"
+
+def parse_symbol(card: str):
+    if not card:
+        return None
+    parts = card.split("_", 1)
+    return parts[1] if parts[0] in COLOUR_PREFIXES else card
+
+def attribute_lists(card_list: list[str], fn) -> list[str]:
+    return [fn(c) for c in card_list if c]
+
+# Aggregate ground-truth and predicted attributes across all four players per image
+for attr, fn in [("colour", parse_colour), ("symbol", parse_symbol)]:
+    merged_df[f"{attr}_truth"] = merged_df[
+        [f"player_{p}_cards_truth_list" for p in range(1, 5)]
+    ].apply(lambda row: [x for lst in row for x in attribute_lists(lst, fn)], axis=1)
+
+    merged_df[f"{attr}_pred"] = merged_df[
+        [f"player_{p}_cards_pred_list" for p in range(1, 5)]
+    ].apply(lambda row: [x for lst in row for x in attribute_lists(lst, fn)], axis=1)
+
+# Per-image F1 (multiset-aware, identical logic to section 4)
+def mean_f1(truth_col: str, pred_col: str) -> tuple[float, list[float]]:
+    scores = []
+    for _, row in merged_df.iterrows():
+        G = Counter(row[truth_col])
+        P = Counter(row[pred_col])
+        tp = sum((G & P).values())
+        fp = sum((P - G).values())
+        fn = sum((G - P).values())
+        denom = 2 * tp + fp + fn
+        scores.append((2 * tp / denom) if denom > 0 else 0.0)
+    return float(np.mean(scores)), scores
+
+colour_f1, _ = mean_f1("colour_truth", "colour_pred")
+symbol_f1, _ = mean_f1("symbol_truth", "symbol_pred")
+
+print(f"Colour F1 Score: {colour_f1:.4f}")
+print(f"Symbol F1 Score: {symbol_f1:.4f}")
+
+# Per-image accuracy (fraction of attributes exactly matched, multiset-aware)
+def mean_accuracy(truth_col: str, pred_col: str) -> float:
+    scores = []
+    for _, row in merged_df.iterrows():
+        G = Counter(row[truth_col])
+        P = Counter(row[pred_col])
+        correct = sum((G & P).values())
+        total = sum(G.values())
+        scores.append((correct / total) if total > 0 else 0.0)
+    return float(np.mean(scores))
+
+colour_acc = mean_accuracy("colour_truth", "colour_pred")
+symbol_acc = mean_accuracy("symbol_truth", "symbol_pred")
+
+print(f"Colour Accuracy: {colour_acc:.4f}")
+print(f"Symbol Accuracy: {symbol_acc:.4f}")
+
+
+# -----------------------------
+# 9. Per-colour and per-symbol breakdown
+# -----------------------------
+from sklearn.metrics import precision_recall_fscore_support
+
+def build_flat_lists(truth_col: str, pred_col: str) -> tuple[list[str], list[str]]:
+    """Flatten all per-image attribute lists into two aligned lists (padded with '__missing__' / '__extra__')."""
+    all_truth, all_pred = [], []
+    for _, row in merged_df.iterrows():
+        G = Counter(row[truth_col])
+        P = Counter(row[pred_col])
+        all_labels = set(G) | set(P)
+        for label in all_labels:
+            g_count = G[label]
+            p_count = P[label]
+            n = max(g_count, p_count)
+            all_truth.extend([label] * g_count + ["__extra__"] * (n - g_count))
+            all_pred.extend([label] * p_count + ["__missing__"] * (n - p_count))
+    return all_truth, all_pred
+
+def per_class_metrics(truth_col: str, pred_col: str) -> pd.DataFrame:
+    truth_flat, pred_flat = build_flat_lists(truth_col, pred_col)
+    labels = sorted(set(truth_flat) - {"__extra__", "__missing__"})
+    p, r, f1, support = precision_recall_fscore_support(
+        truth_flat, pred_flat, labels=labels, zero_division=0
+    )
+    return pd.DataFrame({
+        "label":     labels,
+        "precision": p.round(4),
+        "recall":    r.round(4),
+        "f1":        f1.round(4),
+        "support":   support,
+    }).sort_values("f1", ascending=True)
+
+colour_breakdown = per_class_metrics("colour_truth", "colour_pred")
+symbol_breakdown = per_class_metrics("symbol_truth", "symbol_pred")
+
+print("\nPer-colour metrics:")
+print(colour_breakdown.to_string(index=False))
+
+print("\nPer-symbol metrics:")
+print(symbol_breakdown.to_string(index=False))

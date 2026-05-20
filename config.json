@@ -17,7 +17,7 @@
     "apply_opening_step": false
   },
   "image_processing": {
-    "valid_ext": [".jpg", ".jpeg", ".png"],
+    "valid_ext": [".jpg"],
     "preview_scale": 0.35,
     "max_contours": 5,
     "color_percentage_threshold": 0.55,

@@ -12,11 +12,11 @@ from src.segmentation_border import segmented_cards
 from src.classify import classify_card
 from src.config import load_config, set_global_config
 
-mode = "train" # test or train
+MODE = "train" # test or train
 
-if mode == "test":
+if MODE == "test":
     submission_df = pd.read_csv("data/sample_submission.csv")
-elif mode == "train":
+elif MODE == "train":
     submission_df = pd.read_csv("data/train.csv")
 else:
     raise ValueError("Invalid mode. Choose 'test' or 'train'.")
@@ -43,7 +43,7 @@ for index, row in submission_df.iterrows():
     image_id = row["image_id"]
     print(f"Processing {image_id}...")
 
-    image_path = os.path.join(f"data/{mode}_images", f"{image_id}.jpg")
+    image_path = os.path.join(f"data/{MODE}_images", f"{image_id}.jpg")
 
     # Load image
     img_bgr = cv2.imread(image_path)
@@ -103,4 +103,4 @@ for index, row in submission_df.iterrows():
 
 # Save the submission file with a timestamp
 datetime_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-submission_df.to_csv(f"data/output/{mode}_submission_{datetime_str}.csv", sep=",", index=False)
+submission_df.to_csv(f"data/output/{MODE}_submission_{datetime_str}.csv", sep=",", index=False)

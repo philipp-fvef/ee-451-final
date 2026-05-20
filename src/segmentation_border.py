@@ -108,7 +108,8 @@ def detect_colour_regions_with_white_border(
 
         if ratio <= white_ratio_thresh:
             continue
-
+        
+        # dilate the component more to ensure we capture the full border for contour detection
         component_for_rect = cv2.dilate(component, kernel)
 
         contours, _ = cv2.findContours(
@@ -412,8 +413,8 @@ def segmented_cards(img_rgb, config_path='config.json', return_coords=False, plo
     all_regions = [r for r in all_regions if r[2] >= WHITE_RATIO_THRESH_TOTAL]
     # print(f"Detected {len(all_regions)} card regions with white borders.")
 
-    """ if plot:
-        vis = img.copy()
+    if plot:
+        vis = img_rgb.copy()
         for i, (rect, box, score, color_name) in enumerate(all_regions):
 
             cv2.drawContours(image=vis, contours=[box], contourIdx=0, color=(0,255,0), thickness=5)
@@ -434,7 +435,7 @@ def segmented_cards(img_rgb, config_path='config.json', return_coords=False, plo
         plt.imshow(vis)
         plt.axis("off")
         plt.title("Colour regions surrounded by white border")
-        plt.show() """
+        plt.show()
 
     card_results = []
 
