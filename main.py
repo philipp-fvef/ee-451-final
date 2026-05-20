@@ -1,31 +1,45 @@
-import pandas as pd
-import numpy as np
 import cv2
 import os
-from datetime import datetime
+import pandas as pd
 from PIL import Image
 
-from src.init import initialize_reference_images
-from src.cropping import get_sector_polygons, extract_sector, assign_cards_to_players
-from src.active import detect_active_player
-from src.segmentation_border import segmented_cards
-from src.classify import classify_card
 from src.config import load_config, set_global_config
+from src.init import initialize_reference_images
+from src.cropping import get_sector_polygons, assign_cards_to_players
+from src.active import detect_active_player
+from src.segmentation import segmented_cards
+from src.classify import classify_card
 from src.metrics import calculate_metrics
 
-MODE = "train" # test or train
+MODE = "test"  # test or train
 
 if MODE == "test":
-    submission_df = pd.read_csv("data/sample_submission.csv")
+    img_dir = "test_images"
 elif MODE == "train":
-    submission_df = pd.read_csv("data/train.csv")
+    img_dir = "train_images"
 else:
     raise ValueError("Invalid mode. Choose 'test' or 'train'.")
-print(submission_df.head())
+
+headers = [
+    "image_id",
+    "center_card",
+    "active_player",
+    "player_1_cards",
+    "player_2_cards",
+    "player_3_cards",
+    "player_4_cards",
+]
+
+# Create the submission dataframe with the specified headers
+submission_df = pd.DataFrame(columns=headers)
+
+# Populate the image_id column with the IDs from the images in the specified directory
+image_files = sorted(os.listdir(img_dir))
+submission_df["image_id"] = [os.path.splitext(filename)[0] for filename in image_files]
 
 # remove ID 'L1000867' because it is not in the test set
 submission_df = submission_df[submission_df["image_id"] != "L1000867"]
-print(len(submission_df))
+print(submission_df.head())
 
 # Load and set global configuration
 config = load_config("config.json")
@@ -44,7 +58,7 @@ for index, row in submission_df.iterrows():
     image_id = row["image_id"]
     print(f"Processing {image_id}...")
 
-    image_path = os.path.join(f"data/{MODE}_images", f"{image_id}.jpg")
+    image_path = os.path.join(img_dir, f"{image_id}.jpg")
 
     # Load image
     img_bgr = cv2.imread(image_path)
@@ -58,7 +72,9 @@ for index, row in submission_df.iterrows():
     polygons = get_sector_polygons(img_pil_rgb)
 
     # Detect all cards in the full image with coordinates
-    detected_cards_with_coords = segmented_cards(img_rgb, return_coords=True, plot=False)
+    detected_cards_with_coords = segmented_cards(
+        img_rgb, return_coords=True, plot=False
+    )
 
     # Assign cards to players based on their coordinates
     player_cards_dict = assign_cards_to_players(detected_cards_with_coords, polygons)
@@ -66,7 +82,7 @@ for index, row in submission_df.iterrows():
     # Classify center card
     center_cards = player_cards_dict["Center"]
     if center_cards:
-        center_segmented = segmented_cards(center_cards[0]['crop'], plot=False)
+        center_segmented = segmented_cards(center_cards[0]["crop"], plot=False)
         if center_segmented:
             center_value, center_colour, _ = classify_card(center_segmented[0])
             if center_value is not None:
@@ -83,7 +99,7 @@ for index, row in submission_df.iterrows():
         classified_cards = []
 
         for card_info in cards:
-            card_crop = card_info['crop']
+            card_crop = card_info["crop"]
             card_value, card_colour, _ = classify_card(card_crop)
 
             if card_value is not None:
@@ -102,10 +118,11 @@ for index, row in submission_df.iterrows():
     for i in range(4):
         submission_df.at[index, f"player_{i+1}_cards"] = player_cards[i]
 
-# Save the submission file with a timestamp
-datetime_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-submission_path = f"data/output/{MODE}_submission_{datetime_str}.csv"
+# Save the submission file
+output_dir = "output"
+os.makedirs(output_dir, exist_ok=True)
+submission_path = os.path.join(output_dir, f"{MODE}_submission.csv")
 submission_df.to_csv(submission_path, sep=",", index=False)
 
 if MODE == "train":
-    calculate_metrics(submission_path, "data/train.csv")
+    calculate_metrics(submission_path, "train.csv")

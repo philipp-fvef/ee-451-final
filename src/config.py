@@ -6,10 +6,7 @@ _GLOBAL_CONFIG: Optional[Dict[str, Any]] = None
 
 REQUIRED_CONFIG_KEYS: List[str] = [
     "paths.reference_features",
-    # "paths.reference_cropped_dir",
     "paths.reference_output_dir",
-    "paths.bonus_cropped_dir",
-    "paths.plots_dir",
     "matching.top_k",
     "matching.vote_min_conf",
     "matching.vote_min_count",

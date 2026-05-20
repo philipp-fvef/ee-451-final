@@ -4,6 +4,11 @@ import numpy as np
 from pathlib import Path
 from itertools import combinations
 
+from src.config import load_config, set_global_config, get_config_value
+
+config = load_config("config.json")
+set_global_config(config)
+
 WHITE_SAT_MAX = 50
 WHITE_VAL_MIN = 170
 OPEN_KERNEL_SIZE = 8

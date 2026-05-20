@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from collections import Counter
@@ -8,6 +9,11 @@ def calculate_metrics(predicted_path: str, true_path: str):
     # -----------------------------
     # Load + merge
     # -----------------------------
+
+    # make sure that a file at truth_path exists, otherwise raise an error
+    if not true_path or not os.path.exists(true_path):
+        raise FileNotFoundError(f"Truth file not found: {true_path}. Please provide a valid path to the ground truth CSV file.")
+    
     predicted_df = pd.read_csv(predicted_path)
     truth_df = pd.read_csv(true_path)
 

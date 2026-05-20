@@ -15,18 +15,19 @@ def get_config_param(key: str, default=None):
         return default
 
 
-WHITE_SAT_MAX = get_config_param("white_sat_max", 125)
-WHITE_VAL_MIN = get_config_param("white_val_min", 200)
+WHITE_SAT_MAX = get_config_param("white_sat_max")
+WHITE_VAL_MIN = get_config_param("white_val_min")
 
-WHITE_BORDER_WIDTH = get_config_param("white_border_width", 20)
-WHITE_RATIO_THRESH = get_config_param("white_ratio_thresh_single", 0.6)
-WHITE_RATIO_THRESH_TOTAL = get_config_param("white_ratio_thresh_total", 0.75)
-MIN_REGION_AREA = get_config_param("min_region_area", 7000)
-MIN_AREA_RATIO = get_config_param("min_area_ratio", 0.25)
-MAX_AREA_RATIO = get_config_param("max_area_ratio", 0.4)
+WHITE_BORDER_WIDTH = get_config_param("white_border_width")
+WHITE_RATIO_THRESH = get_config_param("white_ratio_thresh_single")
+WHITE_RATIO_THRESH_TOTAL = get_config_param("white_ratio_thresh_total")
+MIN_REGION_AREA = get_config_param("min_region_area")
+MIN_AREA_RATIO = get_config_param("min_area_ratio")
+MAX_AREA_RATIO = get_config_param("max_area_ratio")
 
-MAX_GAP = get_config_param("max_gap", 70)
-MERGING_ANGLE_TOL = get_config_param("merging_angle_tol", 2)
+MAX_GAP = get_config_param("max_gap")
+MERGING_ANGLE_TOL = get_config_param("merging_angle_tol")
+
 
 def get_white_mask(img, plot=False):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)

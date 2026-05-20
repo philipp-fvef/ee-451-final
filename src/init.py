@@ -83,7 +83,7 @@ def crop_reference_images(output_dir: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
 
     for image_path, crop_map in REFERENCE_IMAGES.items():
-        image_path_full = os.path.join("data", image_path)
+        image_path_full = image_path
         img_bgr = cv2.imread(image_path_full)
         if img_bgr is None:
             raise FileNotFoundError(f"Reference image not found: {image_path_full}")

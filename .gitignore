@@ -1,3 +1,8 @@
+# Data files
+reference_images/
+train_images/
+test_images/
+
 # .DS_Store
 .DS_Store
 
