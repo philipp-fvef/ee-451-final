@@ -11,6 +11,7 @@ from src.active import detect_active_player
 from src.segmentation_border import segmented_cards
 from src.classify import classify_card
 from src.config import load_config, set_global_config
+from src.metrics import calculate_metrics
 
 MODE = "train" # test or train
 
@@ -103,4 +104,8 @@ for index, row in submission_df.iterrows():
 
 # Save the submission file with a timestamp
 datetime_str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-submission_df.to_csv(f"data/output/{MODE}_submission_{datetime_str}.csv", sep=",", index=False)
+submission_path = f"data/output/{MODE}_submission_{datetime_str}.csv"
+submission_df.to_csv(submission_path, sep=",", index=False)
+
+if MODE == "train":
+    calculate_metrics(submission_path, "data/train.csv")
