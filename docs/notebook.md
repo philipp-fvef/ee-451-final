@@ -71,7 +71,9 @@
 **Purpose**: Isolate and extract individual card images from the photograph for downstream classification
 
 **Method** (src/segmentation_border.py):
+
 - **Multi-stage segmentation pipeline based on color + white border detection**:
+  
   1. **White Mask Generation**:
      - HSV-based detection: saturation < 125, value > 200 (WHITE_SAT_MAX=125, WHITE_VAL_MIN=200)
      - Gaussian blur (21×21 kernel) for smoothing before thresholding
@@ -87,15 +89,15 @@
      - For each color mask, find connected components (connectivity=8)
      - Filter by minimum area: MIN_REGION_AREA=7000 pixels
   
-  4. **White Border Detection** (Key Innovation):
+  4. **White Border Detection**:
      - For colored regions: 
        a. Dilate region with ellipse kernel (border_width=20 pixels)
        b. Subtract original region from dilated version to get "ring" (border area)
        c. Check what fraction of ring overlaps with white mask
        d. Keep only regions where white_ratio ≥ 0.69 (WHITE_RATIO_THRESH)
      - For black regions: 
-       a. Apply same dilation + ring detection
-       b. Additionally check area-to-bounding-box ratio (0.25 ≤ ratio ≤ 0.4) to filter non-rectangular noise
+       a. Apply same dilation
+       b. Additionally check area-to-bounding-box ratio (0.25 ≤ ratio ≤ 0.4) to filter non-rectangular noise and markers
        c. Filters out squiggly black artifacts (shadows, text)
   
   5. **Rectangle Fitting**:
@@ -103,8 +105,8 @@
      - Fit minimum area rotated rectangle to each contour with cv2.minAreaRect()
      - Stores: rectangle (center, size, angle), corner points (box), confidence score (white_ratio)
   
-  6. **Merging Overlapping Regions**:
-     - Iteratively merge regions (up to 10 iterations) that are:
+  6. **Merging Close Regions**:
+     - Iteratively merge regions that are:
        a. Same color
        b. Parallel or perpendicular orientation (angle_tol=1°)
        c. Close spatially (within MAX_GAP/2 = 15 pixels)
@@ -112,7 +114,7 @@
      - Stops when no more merges occur
   
   7. **Filtering Contained Regions**:
-     - Remove smaller regions that are >95% contained within larger regions
+     - Remove smaller regions that are contained within larger regions
      - Prevents duplicate detections of same card from multiple color components
   
   8. **Perspective Warp & Standardization**:
@@ -133,6 +135,10 @@
   - Benefit: Handles detection gaps without requiring precise geometric line fitting
   - Trade-off: More computation than line-based, but more robust to real-world card variations
   
+- **Different Pipelines for coloured and black cards**:
+  - black mask was detected, but due to noise the border with white border was unreliable
+  - 
+  
 - **White ratio threshold (0.69)**:
   - Justification: Requires ~70% of border ring to be white; tight threshold filters non-card colored regions
   - Empirical: Tuned to accept genuine cards while rejecting background artifacts
@@ -143,7 +149,7 @@
   
 - **Area ratio filter for black regions (0.25-0.4)**:
   - Reason: Black card regions should be roughly rectangular; squiggly patterns indicate noise
-  - Benefit: Reduces false positives from black shadows, text, or surface artifacts
+  - Benefit: Reduces false positives from black markers
   
 - **Perspective transformation instead of simple cropping**:
   - Reason: Handles rotated cards and normalizes perspective distortion
@@ -184,7 +190,7 @@
 
 **Design Justifications**:
 - **Feature-based over deep learning**:
-  - Reason: Interpretable, deterministic, no training data requirement
+  - Reason: Interpretable, no training data requirement
   - Justification: Works well with limited reference data; features directly encode card properties
 - **Top-k voting (k=5)**:
   - Reason: Balances robustness (multiple votes) against computational cost
@@ -194,7 +200,7 @@
   - Trade-off: Stricter thresholds → fewer errors but more EMPTY classifications; looser → higher recall but potential misclassifications
 - **Augmentation strategy (augment_halves)**:
   - Reason: Card symbols are symmetric; halves provide independent evidence
-  - Benefit: Increases effective reference set without collecting more unique cards
+  - Benefit: Increases effective reference set, especially on partial cards
 
 **Performance Contribution**:
 - Combined with segmentation, achieves per-card accuracy
@@ -269,26 +275,23 @@
   - Angle/rotation issues: [Problems with extreme perspectives]
 - **Confusion matrix**: [If applicable - which card values/colors are confused]
 
-**Comparison**: 
-- [Baseline vs. current approach performance]
+**Comparison**:
+
 - [Component contribution analysis - how much does each component improve accuracy?]
 
 ---
 
 ## 10. Qualitative Analysis
+
 **Visual Case Studies**:
+
 - **Best-case examples**: Show images where all components work well - provide 2-3 representative examples with explanations
 - **Challenging success cases**: Images that appear difficult but system handles robustly - demonstrate edge case handling
 - **Difficult/near-failure cases**: Examples near decision boundaries where system struggles but still produces reasonable output
 - **Failure examples**: When system breaks down - explain why and what would be needed to fix
 
-**Robustness Demonstration**:
-- **Lighting variation**: System behavior across bright/dark/variable lighting
-- **Card angles & perspective**: How segmentation handles rotated, angled cards
-- **Occlusion handling**: Partial card coverage scenarios
-- **Background complexity**: Crowded table vs. clean table comparison
-
 **Component Contribution Evidence**:
+
 - [Show ablation results if available - e.g., what happens if we remove voting classifier?]
 - [Demonstrate that each component meaningfully improves final accuracy]
 - [Example: segmentation quality → classification quality relationship]
@@ -296,28 +299,33 @@
 ---
 
 ## 11. Limitations & Future Improvements
+
 **Current Limitations**:
+
 - [Known failure modes - specific scenarios where system breaks]
 - [Assumptions about table layout, lighting, card materials]
 - [Dataset-specific characteristics our method relies on]
 
 **Potential Improvements**:
+
 - [Alternative segmentation: Deep learning-based object detection vs. geometric approach]
 - [Classification: Neural network fine-tuning, ensemble methods]
 - [Spatial assignment: Learning-based region definition vs. fixed polygons]
 - [Parameter tuning: Automated hyperparameter optimization]
 
 **Data Dependencies**:
+
 - [How performance varies with image quality, resolution, lighting]
 - [Card-specific issues: Different card designs, worn/damaged cards]
 
 ---
 
 ## 12. Conclusion
+
 - **Summary**: Multi-stage geometric + feature-based pipeline for robust card game state recognition
 - **Key Contributions**: [Main innovations or effective design choices]
 - **Performance Achieved**: [Summary metrics - accuracy percentages]
-- **Reproducibility**: 
+- **Reproducibility**:
   - Configuration frozen in config.json
   - Reference features in data/reference_images/
   - Dependencies: OpenCV, NumPy, Pandas, PIL
@@ -326,6 +334,7 @@
 ---
 
 ## Appendices (Optional)
+
 - **A. Configuration Sensitivity Analysis**: How sensitive is final accuracy to changes in key parameters?
 - **B. Reference Card Dataset**: Summary of reference cards used for classification
 - **C. Runtime Analysis**: Computational cost breakdown by component

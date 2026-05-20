@@ -6,7 +6,7 @@ _GLOBAL_CONFIG: Optional[Dict[str, Any]] = None
 
 REQUIRED_CONFIG_KEYS: List[str] = [
     "paths.reference_features",
-    "paths.reference_cropped_dir",
+    # "paths.reference_cropped_dir",
     "paths.reference_output_dir",
     "paths.bonus_cropped_dir",
     "paths.plots_dir",
@@ -15,7 +15,6 @@ REQUIRED_CONFIG_KEYS: List[str] = [
     "matching.vote_min_count",
     "feature_extraction.num_descriptors",
     "feature_extraction.num_points",
-    "feature_extraction.max_symbol_contours",
     "feature_extraction.augment_halves",
     "feature_extraction.apply_opening_step",
     "image_processing.valid_ext",
@@ -55,6 +54,16 @@ REQUIRED_CONFIG_KEYS: List[str] = [
     "image_processing.color_thresholds.k.g_max",
     "image_processing.color_thresholds.k.b_min",
     "image_processing.color_thresholds.k.b_max",
+    "segmentation.white_sat_max",
+    "segmentation.white_val_min",
+    "segmentation.white_border_width",
+    "segmentation.white_ratio_thresh_single",
+    "segmentation.white_ratio_thresh_total",
+    "segmentation.min_region_area",
+    "segmentation.min_area_ratio",
+    "segmentation.max_area_ratio",
+    "segmentation.max_gap",
+    "segmentation.merging_angle_tol",
     "feature_dimensions.shape_feature_dim",
     "feature_dimensions.struct_feature_dim",
 ]

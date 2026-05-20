@@ -125,7 +125,8 @@ def extract_sector(img: Image.Image, polygon: list) -> Tuple[Image.Image, Image.
 def detect_black_rectangular_marker_debug(
     sector_img: Image.Image,
     mask: Image.Image,
-    debug=False
+    debug=False,
+    plot=False
 ) -> bool:
     """
     Debug version with visualization at every step
@@ -319,7 +320,7 @@ def detect_black_rectangular_marker_debug(
             2
         )
 
-        if debug:
+        if debug or plot:
             plt.figure(figsize=(5, 5))
             plt.title(
                 f"Contour {i}\n"
@@ -338,7 +339,7 @@ def detect_black_rectangular_marker_debug(
             if 0.45 < aspect_ratio < 1.65:
 
                 if debug:
-                    print("✅ Black rectangular marker detected")
+                    print("Black rectangular marker detected")
 
                 return True
 
@@ -351,7 +352,7 @@ def detect_black_rectangular_marker_debug(
                 print("Rejected: not rectangle-like")
 
     if debug:
-        print("\n❌ No black rectangular marker detected")
+        print("\nNo black rectangular marker detected")
 
     return False
 
@@ -370,7 +371,8 @@ def detect_yellow_circular_marker_hough(
     max_radius=100,
     yellow_threshold=0.7,      # Minimum fraction that must be yellow
     saturation_threshold=0.2,  # NEW: Minimum average saturation (filters out white)
-    debug=False
+    debug=False,
+    plot=False
 ) -> bool:
     """
     Detect yellow circular marker using Hough Circle Transform
@@ -438,7 +440,6 @@ def detect_yellow_circular_marker_hough(
             total_circle_pixels = np.sum(circle_mask > 0)
             yellow_ratio = yellow_pixel_count / total_circle_pixels if total_circle_pixels > 0 else 0
             
-            # NEW: Check average saturation in the original HSV image
             # This filters out white regions (which have low saturation)
             circle_mask_3d = np.stack([circle_mask] * 3, axis=-1) > 0
             saturation_channel = hsv[:, :, 1]  # S channel
@@ -454,7 +455,7 @@ def detect_yellow_circular_marker_hough(
             if yellow_ratio >= yellow_threshold and avg_saturation >= saturation_threshold:
                 valid_circles.append(i)
                 if debug:
-                    print(f"  ✅ VALID")
+                    print(f"VALID")
             else:
                 if debug:
                     reasons = []
@@ -462,39 +463,32 @@ def detect_yellow_circular_marker_hough(
                         reasons.append(f"yellow {yellow_ratio:.2%} < {yellow_threshold:.2%}")
                     if avg_saturation < saturation_threshold:
                         reasons.append(f"saturation {avg_saturation:.2%} < {saturation_threshold:.2%}")
-                    print(f"  ❌ REJECTED ({', '.join(reasons)})")
+                    print(f"REJECTED ({', '.join(reasons)})")
     
-    # Visualize detected circles
-    if debug:
+    # Visualize detected circle, show only sections with valid circles
+    if (debug or plot) and len(valid_circles) > 0:
         vis_img = img_np.copy()
-        if circles is not None:
-            for i in circles[0, :]:
-                center = (i[0], i[1])
-                radius = i[2]
-                is_valid = any(np.array_equal(i, v) for v in valid_circles)
-                color = (0, 255, 0) if is_valid else (255, 0, 0)
-                thickness = 3 if is_valid else 2
-                
-                cv2.circle(vis_img, center, radius, color, thickness)
-                cv2.circle(vis_img, center, 2, color, 3)
+        for circle in valid_circles:
+            cv2.circle(vis_img, (circle[0], circle[1]), circle[2], (0, 255, 0), 4)
+            cv2.rectangle(vis_img, (circle[0] - 5, circle[1] - 5), (circle[0] + 5, circle[1] + 5), (0, 128, 255), -1)
         
-        plt.subplot(1, 4, 4)
-        plt.title(f"Valid: {len(valid_circles)}/{len(circles[0]) if circles is not None else 0}")
+        plt.figure(figsize=(6, 6))
+        plt.title(f"Valid Circles Detected: {len(valid_circles)}")
         plt.imshow(vis_img)
         plt.axis('off')
         plt.show()
     
     if len(valid_circles) > 0:
         if debug:
-            print(f"✅ Detected {len(valid_circles)} valid yellow circle(s)")
+            print(f"Detected {len(valid_circles)} valid yellow circle(s)")
         return True
     
     if debug:
-        print("❌ No valid yellow circles detected")
+        print("No valid yellow circles detected")
     return False
 
 
-def detect_active_player(img_input, debug=False) -> Dict[str, any]:
+def detect_active_player(img_input, debug=False, plot=False) -> Dict[str, any]:
     """
     Main function to detect the active player in an UNO game image.
     
@@ -560,10 +554,10 @@ def detect_active_player(img_input, debug=False) -> Dict[str, any]:
         
         if is_noisy:
             # Look for yellow circular marker
-            has_marker = detect_yellow_circular_marker_hough(sector_img, mask_img, debug=debug)
+            has_marker = detect_yellow_circular_marker_hough(sector_img, mask_img, debug=debug, plot=plot)
         else:
             # Look for black rectangular marker
-            has_marker = detect_black_rectangular_marker_debug(sector_img, mask_img, debug=debug)
+            has_marker = detect_black_rectangular_marker_debug(sector_img, mask_img, debug=debug, plot=plot)
             #return False
         
         detections[sector_name] = has_marker

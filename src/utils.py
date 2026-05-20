@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
@@ -10,6 +11,8 @@ from skimage.morphology import closing, opening, disk, remove_small_holes, remov
 from sklearn.metrics.pairwise import euclidean_distances
 from skimage.measure import regionprops
 
+# add parent directory to path to allow imports from src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.config import get_config_value
 
 
@@ -628,6 +631,7 @@ def process_card_image(
     save_outputs: bool = True,
     verb: bool = False,
     apply_opening_step: Optional[bool] = None,
+    max_contours: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Process a cropped card image and optionally save thresholded/mask/contour outputs.
@@ -695,7 +699,8 @@ def process_card_image(
             print("\tSaving mask to:", mask_path)
         cv2.imwrite(mask_path, img_thresholded_filled.astype(np.uint8) * 255)
 
-    contours = find_contours_in_image(img_thresholded_filled)
+    contours = find_contours_in_image(img_thresholded_filled, 
+                                      max_contours=max_contours)
 
     if save_outputs:
         contour_img = np.zeros_like(img_thresholded_filled, dtype=np.uint8)
@@ -911,16 +916,16 @@ def compute_descriptor_from_contours(
     contours: List[np.ndarray],
     num_descriptors: Optional[int] = None,
     num_points: Optional[int] = None,
-    max_symbol_contours: Optional[int] = None,
+    max_contours: Optional[int] = None,
 ) -> Optional[np.ndarray]:
-    if num_descriptors is None or num_points is None or max_symbol_contours is None:
+    if num_descriptors is None or num_points is None or max_contours is None:
         if num_descriptors is None:
             num_descriptors = int(get_config_value("feature_extraction.num_descriptors"))
         if num_points is None:
             num_points = int(get_config_value("feature_extraction.num_points"))
-        if max_symbol_contours is None:
-            max_symbol_contours = int(
-                get_config_value("feature_extraction.max_symbol_contours")
+        if max_contours is None:
+            max_contours = int(
+                get_config_value("image_processing.max_contours")
             )
 
     if not contours:
@@ -932,8 +937,8 @@ def compute_descriptor_from_contours(
     ]
     areas_sorted = sorted(areas, key=lambda item: item[1], reverse=True)
 
-    max_symbol_contours = max(1, max_symbol_contours)
-    selected = [contours[idx] for idx, _ in areas_sorted[:max_symbol_contours]]
+    max_contours = max(1, max_contours)
+    selected = [contours[idx] for idx, _ in areas_sorted[:max_contours]]
     if not selected:
         return None
 

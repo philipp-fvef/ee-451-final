@@ -1,7 +1,6 @@
 {
   "paths": {
     "reference_features": "data/reference_images/reference_features.npz",
-    "reference_cropped_dir": "data/reference_images/cropped",
     "reference_output_dir": "data/reference_images",
     "bonus_cropped_dir": "data/bonus_images/cropped",
     "plots_dir": "plots"
@@ -14,14 +13,13 @@
   "feature_extraction": {
     "num_descriptors": 64,
     "num_points": 256,
-    "max_symbol_contours": 5,
     "augment_halves": true,
     "apply_opening_step": false
   },
   "image_processing": {
     "valid_ext": [".jpg", ".jpeg", ".png"],
     "preview_scale": 0.35,
-    "max_contours": 11,
+    "max_contours": 5,
     "color_percentage_threshold": 0.55,
     "mask": {
       "disk_size_black": 3,
@@ -55,7 +53,7 @@
       },
       "y": {
         "h_min": 0.1,
-        "h_max": 0.2,
+        "h_max": 0.19,
         "s_min": 0.5,
         "s_max": 1.0,
         "v_min": 0.75,
@@ -78,8 +76,18 @@
     }
   },
   "segmentation": {
-    "white_sat_max": 50,
-    "white_val_min": 170,
+    "white_sat_max": 125,
+    "white_val_min": 200,
+    "white_border_width": 20,
+    "white_ratio_thresh_single": 0.6,
+    "white_ratio_thresh_total": 0.85,
+    "min_region_area": 7000,
+    "min_area_ratio": 0.25,
+    "max_area_ratio": 0.4,
+    "max_gap": 100,
+    "merging_angle_tol": 5,
+    "white_sat_max_old": 50,
+    "white_val_min_old": 170,
     "open_kernel_size": 8,
     "canny_low": 50,
     "canny_high": 150,

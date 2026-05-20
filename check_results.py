@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 
-predicted_path = "data/output/train_submission_2026-05-18-16-12-56.csv"
+predicted_path = "data/output/train_submission_2026-05-20-09-53-19.csv"
 truth_path = "data/train.csv"
 
 predicted_df = pd.read_csv(predicted_path)

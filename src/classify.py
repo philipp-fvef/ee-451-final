@@ -61,9 +61,9 @@ def classify_card(
         result["contours"],
         num_descriptors=meta["num_descriptors"],
         num_points=meta["num_points"],
-        max_symbol_contours=meta.get(
-            "max_symbol_contours",
-            int(get_config_value("feature_extraction.max_symbol_contours")),
+        max_contours=meta.get(
+            "max_contours",
+            int(get_config_value("image_processing.max_contours")),
         ),
     )
     descriptor = align_descriptor(descriptor, features.shape[1])
@@ -126,10 +126,10 @@ def load_reference_features(features_path: str,) -> Tuple[List[str], np.ndarray,
         if "num_points" in data
         else int(get_config_value("feature_extraction.num_points"))
     )
-    max_symbol_contours = (
-        int(data["max_symbol_contours"])
-        if "max_symbol_contours" in data
-        else int(get_config_value("feature_extraction.max_symbol_contours"))
+    max_contours = (
+        int(data["max_contours"])
+        if "max_contours" in data
+        else int(get_config_value("image_processing.max_contours"))
     )
     shape_feature_dim = (
         int(data["shape_feature_dim"]) if "shape_feature_dim" in data else shape_dim_cfg
@@ -161,7 +161,7 @@ def load_reference_features(features_path: str,) -> Tuple[List[str], np.ndarray,
     return labels, features, {
         "num_descriptors": num_descriptors,
         "num_points": num_points,
-        "max_symbol_contours": max_symbol_contours,
+        "max_contours": max_contours,
         "shape_feature_dim": shape_feature_dim,
         "struct_feature_dim": struct_feature_dim,
         "feature_dim": feature_dim,

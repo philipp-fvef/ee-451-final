@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from src.config import get_config_value
-from utils.lab_utils import rotation_invariant, scaling_invariant, translation_invariant
+from src.utils import rotation_invariant, scaling_invariant, translation_invariant
 
 
 def contour_shape_features(
@@ -243,16 +243,16 @@ def compute_descriptor_from_contours(
     contours: List[np.ndarray],
     num_descriptors: Optional[int] = None,
     num_points: Optional[int] = None,
-    max_symbol_contours: Optional[int] = None,
+    max_contours: Optional[int] = None,
 ) -> Optional[np.ndarray]:
-    if num_descriptors is None or num_points is None or max_symbol_contours is None:
+    if num_descriptors is None or num_points is None or max_contours is None:
         if num_descriptors is None:
             num_descriptors = int(get_config_value("feature_extraction.num_descriptors"))
         if num_points is None:
             num_points = int(get_config_value("feature_extraction.num_points"))
-        if max_symbol_contours is None:
-            max_symbol_contours = int(
-                get_config_value("feature_extraction.max_symbol_contours")
+        if max_contours is None:
+            max_contours = int(
+                get_config_value("image_processing.max_contours")
             )
 
     if not contours:
@@ -264,8 +264,8 @@ def compute_descriptor_from_contours(
     ]
     areas_sorted = sorted(areas, key=lambda item: item[1], reverse=True)
 
-    max_symbol_contours = max(1, max_symbol_contours)
-    selected = [contours[idx] for idx, _ in areas_sorted[:max_symbol_contours]]
+    max_contours = max(1, max_contours)
+    selected = [contours[idx] for idx, _ in areas_sorted[:max_contours]]
     if not selected:
         return None
 
@@ -323,10 +323,10 @@ def load_reference_features(
         if "num_points" in data
         else int(get_config_value("feature_extraction.num_points"))
     )
-    max_symbol_contours = (
-        int(data["max_symbol_contours"])
-        if "max_symbol_contours" in data
-        else int(get_config_value("feature_extraction.max_symbol_contours"))
+    max_contours = (
+        int(data["max_contours"])
+        if "max_contours" in data
+        else int(get_config_value("image_processing.max_contours"))
     )
     shape_feature_dim = (
         int(data["shape_feature_dim"]) if "shape_feature_dim" in data else shape_dim_cfg
@@ -358,7 +358,7 @@ def load_reference_features(
     return labels, features, {
         "num_descriptors": num_descriptors,
         "num_points": num_points,
-        "max_symbol_contours": max_symbol_contours,
+        "max_contours": max_contours,
         "shape_feature_dim": shape_feature_dim,
         "struct_feature_dim": struct_feature_dim,
         "feature_dim": feature_dim,

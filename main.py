@@ -5,13 +5,14 @@ import os
 from datetime import datetime
 from PIL import Image
 
+from src.init import initialize_reference_images
 from src.cropping import get_sector_polygons, extract_sector, assign_cards_to_players
 from src.active import detect_active_player
 from src.segmentation_border import segmented_cards
 from src.classify import classify_card
 from src.config import load_config, set_global_config
 
-mode = "test" # test ot train
+mode = "train" # test or train
 
 if mode == "test":
     submission_df = pd.read_csv("data/sample_submission.csv")
@@ -21,7 +22,6 @@ else:
     raise ValueError("Invalid mode. Choose 'test' or 'train'.")
 print(submission_df.head())
 
-
 # remove ID 'L1000867' because it is not in the test set
 submission_df = submission_df[submission_df["image_id"] != "L1000867"]
 print(len(submission_df))
@@ -30,6 +30,8 @@ print(len(submission_df))
 config = load_config("config.json")
 set_global_config(config)
 
+# initialise reference images and compute features
+initialize_reference_images()
 
 # iterate over rows of the submission dataframe
 for index, row in submission_df.iterrows():
