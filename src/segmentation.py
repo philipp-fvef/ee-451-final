@@ -7,26 +7,18 @@ import matplotlib.pyplot as plt
 from src.utils import apply_colour_threshold
 from src.config import get_config_value
 
+WHITE_SAT_MAX = get_config_value("segmentation.white_sat_max")
+WHITE_VAL_MIN = get_config_value("segmentation.white_val_min")
 
-def get_config_param(key: str, default=None):
-    try:
-        return get_config_value(f"segmentation.{key}")
-    except (KeyError, ValueError):
-        return default
+WHITE_BORDER_WIDTH = get_config_value("segmentation.white_border_width")
+WHITE_RATIO_THRESH = get_config_value("segmentation.white_ratio_thresh_single")
+WHITE_RATIO_THRESH_TOTAL = get_config_value("segmentation.white_ratio_thresh_total")
+MIN_REGION_AREA = get_config_value("segmentation.min_region_area")
+MIN_AREA_RATIO = get_config_value("segmentation.min_area_ratio")
+MAX_AREA_RATIO = get_config_value("segmentation.max_area_ratio")
 
-
-WHITE_SAT_MAX = get_config_param("white_sat_max")
-WHITE_VAL_MIN = get_config_param("white_val_min")
-
-WHITE_BORDER_WIDTH = get_config_param("white_border_width")
-WHITE_RATIO_THRESH = get_config_param("white_ratio_thresh_single")
-WHITE_RATIO_THRESH_TOTAL = get_config_param("white_ratio_thresh_total")
-MIN_REGION_AREA = get_config_param("min_region_area")
-MIN_AREA_RATIO = get_config_param("min_area_ratio")
-MAX_AREA_RATIO = get_config_param("max_area_ratio")
-
-MAX_GAP = get_config_param("max_gap")
-MERGING_ANGLE_TOL = get_config_param("merging_angle_tol")
+MAX_GAP = get_config_value("segmentation.max_gap")
+MERGING_ANGLE_TOL = get_config_value("segmentation.merging_angle_tol")
 
 
 def get_white_mask(img, plot=False):
@@ -109,6 +101,8 @@ def detect_colour_regions_with_white_border(
 
         if ratio <= white_ratio_thresh:
             continue
+
+        # print(f"Ratio {ratio:.2f} is bigger than {white_ratio_thresh}, accepted as card candidate.")
         
         # dilate the component more to ensure we capture the full border for contour detection
         component_for_rect = cv2.dilate(component, kernel)
@@ -126,84 +120,6 @@ def detect_colour_regions_with_white_border(
         regions.append((rect, box, ratio))
 
     return regions
-
-
-def detect_black_regions_with_white_border(img_bgr,
-    white_mask,
-    colour_mask,
-    border_width=WHITE_BORDER_WIDTH,
-    min_area_ratio=MIN_AREA_RATIO,
-    max_area_ratio=MAX_AREA_RATIO,
-    min_area=MIN_REGION_AREA,):
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (border_width, border_width))
-    # apply morphological closing to connect nearby components and create a more complete border
-    colour_mask = cv2.morphologyEx(colour_mask, cv2.MORPH_CLOSE, kernel)
-
-    # plot the black mask to check if it's working correctly.
-    if False:
-        plt.figure(figsize=(12,7))
-        plt.imshow(colour_mask, cmap='gray')
-        plt.axis("off")
-        plt.title("Black mask after closing")
-        plt.show()
-
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
-        colour_mask, connectivity=8
-    )
-
-    regions = []
-
-    for i in range(1, num_labels):
-        area = stats[i, cv2.CC_STAT_AREA]
-
-        if area < min_area:
-            continue
-
-        component = (labels == i).astype(np.uint8) * 255
-
-        # check if the region is not squiggly (which is common for black noise) by comparing the area to the bounding box area
-        x, y, w, h = stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]
-        bbox_area = w * h
-        ratio = area / bbox_area if bbox_area > 0 else 0
-        # print(f"Black region {i}: area={area}, bbox_area={bbox_area}, ratio={ratio}")
-        if bbox_area == 0 or ratio < min_area_ratio or ratio > max_area_ratio:
-            continue
-
-        component_for_rect = cv2.dilate(component, kernel)
-
-        contours, _ = cv2.findContours(
-            component_for_rect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        if not contours:
-            continue
-
-        cnt = max(contours, key=cv2.contourArea)
-        rect = cv2.minAreaRect(cnt)
-        box = cv2.boxPoints(rect).astype(np.int32)
-
-        regions.append((rect, box, ratio))
-
-    return regions
-
-
-def rotated_iou(rect1, rect2):
-    retval, intersecting_region = cv2.rotatedRectangleIntersection(rect1, rect2)
-
-    if retval == 0 or intersecting_region is None:
-        return 0.0
-
-    inter_area = cv2.contourArea(intersecting_region)
-
-    area1 = rect1[1][0] * rect1[1][1]
-    area2 = rect2[1][0] * rect2[1][1]
-
-    union = area1 + area2 - inter_area
-
-    if union <= 0:
-        return 0.0
-
-    return inter_area / union
 
 
 def merge_rectangles(rect1, rect2):
